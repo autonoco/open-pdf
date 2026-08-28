@@ -16,7 +16,15 @@ export function usePdfDocument(bytes: Uint8Array | null, _version: number) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!bytes) return;
+    if (!bytes) {
+      // Null bytes means a different document is loading; drop the stale one.
+      setDoc((prev) => {
+        prev?.destroy();
+        return null;
+      });
+      setError(null);
+      return;
+    }
     let cancelled = false;
     let loaded: PDFDocumentProxy | null = null;
     const task = pdfjs.getDocument({ data: bytes.slice() });
