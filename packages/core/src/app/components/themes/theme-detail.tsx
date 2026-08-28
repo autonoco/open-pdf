@@ -16,8 +16,9 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
   const theme = useMemo(() => themes.find((th) => th.id === themeId), [themeId]);
   const [pageIndex, setPageIndex] = useState(0);
 
-  const { bytes, version, error } = useThemeDemoPdf(themeId, theme?.hasDemo ?? false);
-  const { doc: pdfDoc } = usePdfDocument(bytes, version);
+  const { bytes, version, error: workerError } = useThemeDemoPdf(themeId, theme?.hasDemo ?? false);
+  const { doc: pdfDoc, error: docError } = usePdfDocument(bytes, version);
+  const error = workerError ?? docError;
   const totalPages = pdfDoc?.numPages ?? 0;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset the page when the theme changes

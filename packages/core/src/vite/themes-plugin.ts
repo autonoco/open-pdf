@@ -104,10 +104,11 @@ function generateThemesModule(themes: ParsedTheme[], isDev: boolean): string {
 
   const urlCases = withDemo
     .map((t) => {
-      const importPath = isDev ? `@fs/${normalizePath(t.demoAbs).replace(/^\/+/, '')}` : t.demoAbs;
+      // Static builds must not leak build-host paths; the worker loads by
+      // themeId through loadThemeDemo and ignores the URL there.
       const urlExpr = isDev
-        ? `import.meta.env.BASE_URL + ${JSON.stringify(importPath)}`
-        : JSON.stringify(importPath);
+        ? `import.meta.env.BASE_URL + ${JSON.stringify(`@fs/${normalizePath(t.demoAbs).replace(/^\/+/, '')}`)}`
+        : "''";
       return `    case ${JSON.stringify(t.id)}: return ${urlExpr};`;
     })
     .join('\n');

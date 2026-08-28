@@ -62,9 +62,9 @@ function ThemeCard({
 function ThemePreview({ theme }: { theme: Theme }) {
   const t = useLocale();
   const { bytes, version, error } = useThemeDemoPdf(theme.id, theme.hasDemo);
-  const { doc } = usePdfDocument(bytes, version);
+  const { doc, error: docError } = usePdfDocument(bytes, version);
 
-  if (!theme.hasDemo || error) {
+  if (!theme.hasDemo || error || docError) {
     return <NoDemoState />;
   }
   if (!doc) {
