@@ -16,6 +16,12 @@ Use this package directly only when wiring up an existing workspace by hand:
 pnpm add @autono/open-pdf
 ```
 
+To update an existing workspace to the latest version (and sync its agent skills):
+
+```bash
+npx open-pdf update
+```
+
 ## What's inside
 
 - **Dev server + viewer** — renders actual PDF bytes (Takumi engine in a web worker) with sub-second re-renders on save. Doc list, page navigation, download.

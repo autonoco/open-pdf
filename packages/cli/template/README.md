@@ -18,6 +18,8 @@ Then open the dev server and edit `docs/getting-started/index.tsx`, or create a 
 | `pnpm dev` | Start the dev server with hot reload. |
 | `pnpm build` | Build a static bundle you can deploy. |
 | `pnpm preview` | Preview the built bundle locally. |
+| `pnpm export` | Render docs to PDF (or `--format docx`). |
+| `pnpm update` | Update `@autono/open-pdf` to the latest version and sync skills. |
 
 ## Authoring a doc
 

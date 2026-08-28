@@ -23,6 +23,16 @@ Open the workspace in your coding agent and ask for a document. The bundled `cre
 
 Requires Node.js 18+.
 
+## Updating
+
+Inside a workspace:
+
+```bash
+npx open-pdf update
+```
+
+Moves `@autono/open-pdf` to the latest version and syncs the agent skills it ships. Your docs and config are untouched. The dev server shows an **Update** button when a newer version is out, which does the same thing. Restart `npm run dev` afterwards.
+
 ## The loop
 
 1. **Describe.** Tell your agent what the document is. It runs `/create-doc` and writes the React.
