@@ -25,8 +25,7 @@ Keep this file short: hard rules only. All deeper guidance lives in the skills a
 The skills above are managed by `@autono/open-pdf`. Do not edit them in place. To pull the latest versions:
 
 ```
-pnpm add @autono/open-pdf@latest
-pnpm sync:skills
+pnpm update
 ```
 
-`pnpm dev` will also detect drift on startup and offer to sync. `pnpm sync:skills --dry-run` (via `pnpm exec open-pdf sync:skills --dry-run`) previews changes without writing.
+This moves `@autono/open-pdf` to the latest release and syncs the skills it ships (`pnpm sync:skills` alone re-syncs from the installed version). `pnpm dev` will also detect drift on startup and offer to sync. `pnpm sync:skills --dry-run` (via `pnpm exec open-pdf sync:skills --dry-run`) previews changes without writing.
