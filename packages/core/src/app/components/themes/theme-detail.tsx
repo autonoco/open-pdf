@@ -5,32 +5,26 @@ import { Button } from '@/components/ui/button';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { docsByTheme, loadDoc } from '../../lib/docs';
-import { DocPdfThumb } from '../../lib/pdf/doc-pdf-thumb';
+import { DocPdfThumb, FitWidthPdfPage } from '../../lib/pdf/doc-pdf-thumb';
+import { usePdfDocument } from '../../lib/pdf/pdf-viewer';
+import { useThemeDemoPdf } from '../../lib/pdf/use-doc-pdf';
 import type { DocModule } from '../../lib/sdk';
-import { loadThemeDemo, type ThemeDemoModule, themes } from '../../lib/themes';
+import { themes } from '../../lib/themes';
 
 export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () => void }) {
   const t = useLocale();
   const theme = useMemo(() => themes.find((th) => th.id === themeId), [themeId]);
-  const [demo, setDemo] = useState<ThemeDemoModule | null>(null);
   const [pageIndex, setPageIndex] = useState(0);
 
+  const { bytes, version, error } = useThemeDemoPdf(themeId, theme?.hasDemo ?? false);
+  const { doc: pdfDoc } = usePdfDocument(bytes, version);
+  const totalPages = pdfDoc?.numPages ?? 0;
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset the page when the theme changes
   useEffect(() => {
     setPageIndex(0);
-    setDemo(null);
-    if (!theme?.hasDemo) return;
-    let cancelled = false;
-    loadThemeDemo(theme.id)
-      .then((mod) => {
-        if (!cancelled) setDemo(mod);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [theme]);
+  }, [themeId]);
 
-  const totalPages = 0; // TODO(pdf): page count from worker-rendered demo PDF (theme rewrite pass)
   const usedByDocIds = useMemo(() => (theme ? docsByTheme(theme.id) : []), [theme]);
 
   const promptRef = useRef<HTMLPreElement>(null);
@@ -58,7 +52,7 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [totalPages]);
 
   if (!theme) {
     return (
@@ -97,14 +91,18 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
             <div className="relative aspect-video overflow-hidden rounded-[8px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04]">
               {!theme.hasDemo ? (
                 <NoDemoLargeState />
-              ) : !demo ? (
+              ) : error ? (
+                <div className="grid h-full w-full place-items-center bg-muted/40 px-8 text-center">
+                  <p className="max-w-md font-mono text-[11px] leading-relaxed text-destructive">
+                    {error}
+                  </p>
+                </div>
+              ) : !pdfDoc ? (
                 <div className="grid h-full w-full place-items-center text-[11px] tracking-[0.08em] uppercase text-muted-foreground/60">
                   {t.common.loading}
                 </div>
               ) : (
-                // TODO(pdf): render demo via the PDF worker once theme demos move
-                // to the Takumi dialect (theme rewrite pass).
-                <NoDemoLargeState />
+                <FitWidthPdfPage doc={pdfDoc} pageNumber={pageIndex + 1} />
               )}
             </div>
 

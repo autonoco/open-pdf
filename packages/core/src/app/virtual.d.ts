@@ -49,4 +49,5 @@ declare module 'virtual:open-pdf/themes' {
     default: DocComponent;
     design?: DesignSystem;
   }>;
+  export function demoImportUrl(id: string): string;
 }

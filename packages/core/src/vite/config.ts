@@ -148,6 +148,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
       plugins: () => [
         locTagsPlugin({ userCwd, docsDir, apply: 'build' }),
         openPdfPlugin({ userCwd, config, coreVersion: CORE_VERSION }),
+        themesPlugin({ userCwd, config }),
       ],
     },
   };

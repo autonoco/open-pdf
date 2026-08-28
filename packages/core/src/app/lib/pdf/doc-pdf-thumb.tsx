@@ -1,14 +1,19 @@
+import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { useEffect, useRef, useState } from 'react';
 import { PdfPageCanvas, usePdfDocument } from './pdf-viewer';
 import { useDocPdf } from './use-doc-pdf';
 
 /**
- * First-page PDF preview for browser cards: width-fit, top-cropped by the
- * parent's fixed-aspect container, Google-Docs-card style.
+ * Width-fit PDF page, top-cropped by the parent's fixed-aspect container,
+ * Google-Docs-card style.
  */
-export function DocPdfThumb({ docId }: { docId: string }) {
-  const { bytes, version } = useDocPdf(docId);
-  const { doc } = usePdfDocument(bytes, version);
+export function FitWidthPdfPage({
+  doc,
+  pageNumber = 1,
+}: {
+  doc: PDFDocumentProxy | null;
+  pageNumber?: number;
+}) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [width, setWidth] = useState(0);
 
@@ -24,7 +29,14 @@ export function DocPdfThumb({ docId }: { docId: string }) {
 
   return (
     <div ref={ref} className="h-full w-full bg-white">
-      {doc && width > 0 && <PdfPageCanvas doc={doc} pageNumber={1} width={width} />}
+      {doc && width > 0 && <PdfPageCanvas doc={doc} pageNumber={pageNumber} width={width} />}
     </div>
   );
+}
+
+/** First-page PDF preview for doc browser cards. */
+export function DocPdfThumb({ docId }: { docId: string }) {
+  const { bytes, version } = useDocPdf(docId);
+  const { doc } = usePdfDocument(bytes, version);
+  return <FitWidthPdfPage doc={doc} />;
 }

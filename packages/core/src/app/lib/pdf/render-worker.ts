@@ -15,6 +15,7 @@ if (import.meta.env.DEV && IN_WORKER) {
 }
 
 import { loadDoc } from 'virtual:open-pdf/docs';
+import { loadThemeDemo } from 'virtual:open-pdf/themes';
 import { fromJsx } from '@takumi-rs/helpers/jsx';
 import { createElement } from 'react';
 import { render } from 'takumi-pdf';
@@ -25,13 +26,14 @@ import {
   type TakumiNode,
 } from '../../../shared/takumi-doc';
 
-export type RenderRequest = {
+export type RenderSource = { docId: string } | { themeId: string };
+
+export type RenderRequest = RenderSource & {
   type: 'render';
   seq: number;
-  docId: string;
   /**
    * BASE_URL-prefixed module URL including the HMR cache-bust token. Dev only:
-   * a static build imports the bundled doc chunk through `loadDoc` instead.
+   * a static build imports the bundled chunk through `loadDoc`/`loadThemeDemo`.
    */
   moduleUrl: string;
   /**
@@ -56,7 +58,9 @@ async function handleRender(req: RenderRequest) {
   const start = performance.now();
   const mod = import.meta.env.DEV
     ? await import(/* @vite-ignore */ req.moduleUrl)
-    : await loadDoc(req.docId);
+    : 'themeId' in req
+      ? await loadThemeDemo(req.themeId)
+      : await loadDoc(req.docId);
   if (typeof mod.default !== 'function') {
     throw new Error(`Doc module must default-export a component. Got: ${typeof mod.default}`);
   }

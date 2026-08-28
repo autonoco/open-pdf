@@ -1,4 +1,5 @@
 import { docImportUrl } from 'virtual:open-pdf/docs';
+import { demoImportUrl } from 'virtual:open-pdf/themes';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { docChangeIncludes } from '../docs';
 import type { RenderRequest, RenderResponse } from './render-worker';
@@ -131,6 +132,74 @@ export function useDocPdf(docId: string): DocPdfState & { rerender: () => void }
   }, [docId, kick]);
 
   return { ...state, rerender: kick };
+}
+
+/**
+ * Renders a theme's demo doc through the same worker as real docs. Theme file
+ * edits trigger a full reload, so there is no HMR re-kick here.
+ */
+export function useThemeDemoPdf(themeId: string, enabled: boolean): DocPdfState {
+  const [state, setState] = useState<DocPdfState>({
+    bytes: null,
+    tags: {},
+    rendering: true,
+    error: null,
+    durationMs: null,
+    version: 0,
+  });
+  const latestSeqRef = useRef(0);
+
+  useEffect(() => {
+    setState({
+      bytes: null,
+      tags: {},
+      rendering: enabled,
+      error: null,
+      durationMs: null,
+      version: 0,
+    });
+    if (!enabled) return;
+    const seq = ++seqCounter;
+    latestSeqRef.current = seq;
+    let moduleUrl: string;
+    try {
+      moduleUrl = demoImportUrl(themeId);
+    } catch (e) {
+      setState((s) => ({
+        ...s,
+        rendering: false,
+        error: e instanceof Error ? e.message : String(e),
+      }));
+      return;
+    }
+
+    void getWorker().then((worker) => {
+      if (latestSeqRef.current !== seq) return;
+      const onMessage = (event: MessageEvent<RenderResponse>) => {
+        const msg = event.data;
+        if (msg.seq !== seq || (msg.type !== 'rendered' && msg.type !== 'render-error')) return;
+        worker.removeEventListener('message', onMessage);
+        if (latestSeqRef.current !== seq) return;
+        if (msg.type === 'rendered') {
+          setState((s) => ({
+            bytes: msg.bytes,
+            tags: msg.tags,
+            rendering: false,
+            error: null,
+            durationMs: msg.durationMs,
+            version: s.version + 1,
+          }));
+        } else {
+          setState((s) => ({ ...s, rendering: false, error: msg.message }));
+        }
+      };
+      worker.addEventListener('message', onMessage);
+      const req: RenderRequest = { type: 'render', seq, themeId, moduleUrl, inspect: false };
+      worker.postMessage(req);
+    });
+  }, [themeId, enabled]);
+
+  return state;
 }
 
 /** One-shot clean render (no inspector annotations) for download/export. */
