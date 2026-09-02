@@ -27,11 +27,10 @@ The workspace root carries `AGENTS.md` and an identical `CLAUDE.md`. They are de
 Skills are managed by `@autono/open-pdf`. Do not edit them in place; local edits are overwritten on the next sync. To pull the latest versions:
 
 ```bash
-npm install @autono/open-pdf@latest
-npm run sync:skills
+npm run update
 ```
 
-`npm run dev` also detects drift on startup and offers to sync. To preview what a sync would change without writing anything:
+This moves `@autono/open-pdf` to the latest release and syncs the skills it ships; `npm run sync:skills` alone re-syncs from the installed version. `npm run dev` also detects drift on startup and offers to sync. To preview what a sync would change without writing anything:
 
 ```bash
 npx open-pdf sync:skills --dry-run
