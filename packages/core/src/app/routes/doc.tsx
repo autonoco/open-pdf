@@ -1,14 +1,32 @@
 import config from 'virtual:open-pdf/config';
-import { ChevronLeft, Crosshair, Download, Loader2, MessageSquarePlus, X } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronLeft,
+  Crosshair,
+  Download,
+  FileCode2,
+  FileText,
+  FileType2,
+  Loader2,
+  MessageSquarePlus,
+  X,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { type EditableFormat, FORMAT_MIME } from '../../export/editable';
 import { buildHitMap, extractBoxText, type LocBox, type PageHitMap } from '../lib/pdf/hit-map';
 import { InspectOverlay } from '../lib/pdf/inspect-overlay';
 import { PdfPageCanvas, usePdfDocument } from '../lib/pdf/pdf-viewer';
-import { renderCleanPdf, useDocPdf } from '../lib/pdf/use-doc-pdf';
+import { exportDoc, renderCleanPdf, useDocPdf } from '../lib/pdf/use-doc-pdf';
 import { useDocModule } from '../lib/use-doc-module';
 
 const { showDocUi, showDocBrowser } = config.build;
@@ -149,22 +167,33 @@ export function Doc() {
     }
   }, [selection, note, docId]);
 
-  const download = async () => {
-    if (!bytes) return;
-    // Preview bytes carry inspector annotations; export re-renders clean.
-    let out: Uint8Array;
-    try {
-      out = await renderCleanPdf(docId);
-    } catch {
-      out = bytes.slice();
-    }
-    const blob = new Blob([out.slice().buffer as ArrayBuffer], { type: 'application/pdf' });
+  const [exporting, setExporting] = useState(false);
+
+  const saveFile = (out: Uint8Array, format: 'pdf' | EditableFormat) => {
+    const blob = new Blob([out.slice().buffer as ArrayBuffer], { type: FORMAT_MIME[format] });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${docId}.pdf`;
+    a.download = `${docId}.${format}`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const download = async (format: 'pdf' | EditableFormat) => {
+    if (!bytes || exporting) return;
+    setExporting(true);
+    try {
+      if (format === 'pdf') {
+        // Preview bytes carry inspector annotations; export re-renders clean.
+        saveFile(await renderCleanPdf(docId).catch(() => bytes.slice()), 'pdf');
+      } else {
+        saveFile(await exportDoc(docId, format), format);
+      }
+    } catch (err) {
+      toast.error(`Export failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setExporting(false);
+    }
   };
 
   const scrollToPage = (n: number) => {
@@ -209,17 +238,35 @@ export function Doc() {
               <Crosshair className="size-4" />
               Inspect
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={download}
-              disabled={!bytes}
-              aria-label="Download PDF"
-              title="Download — identical bytes to this preview"
-            >
-              <Download className="size-4" />
-              PDF
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                disabled={!bytes || exporting}
+                aria-label="Export"
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              >
+                {exporting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Download className="size-4" />
+                )}
+                Export
+                <ChevronDown className="size-3.5 opacity-60" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[180px]">
+                <DropdownMenuItem onClick={() => download('pdf')}>
+                  <FileText />
+                  PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => download('docx')}>
+                  <FileType2 />
+                  Word (.docx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => download('md')}>
+                  <FileCode2 />
+                  Markdown (.md)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
       )}

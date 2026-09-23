@@ -7,7 +7,7 @@
 [![CI](https://github.com/autonoco/open-pdf/actions/workflows/ci.yml/badge.svg)](https://github.com/autonoco/open-pdf/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Your coding agent writes documents as React components. The dev server renders them to **real PDF bytes** on every save, so the preview in the browser is the file you ship. Click any element to see its source line and leave a comment; the agent applies it and re-renders. Export the same bytes headlessly as PDF, or as editable Word.
+Your coding agent writes documents as React components. The dev server renders them to **real PDF bytes** on every save, so the preview in the browser is the file you ship. Click any element to see its source line and leave a comment; the agent applies it and re-renders. Export the same bytes headlessly as PDF, or as editable Word or Markdown.
 
 [openpdf.sh](https://openpdf.sh) · [Documentation](https://docs.openpdf.sh) · [Quickstart](https://docs.openpdf.sh/quickstart) · [Discussions](https://github.com/autonoco/open-pdf/discussions)
 
@@ -38,14 +38,14 @@ Moves `@autono/open-pdf` to the latest version and syncs the agent skills it shi
 1. **Describe.** Tell your agent what the document is. It runs `/create-doc` and writes the React.
 2. **Preview.** The dev server renders actual PDF bytes on every save, in well under a second.
 3. **Annotate.** Press `i`, click anything, leave a note. It lands in the source as an `@pdf-comment` marker.
-4. **Ship.** Your agent runs `/apply-comments`. `open-pdf export` writes the PDF, or `--format docx` for editable Word.
+4. **Ship.** Your agent runs `/apply-comments`. `open-pdf export` writes the PDF, or `--format docx` / `--format md` for editable Word or Markdown. The viewer's Export menu does the same.
 
 ## What you get
 
 - **A preview that is the PDF.** [Takumi](https://takumi.kane.tw) renders real PDF bytes in a web worker. No HTML approximation.
 - **Click-to-source inspector.** Every element knows its exact source line. Comments persist in the source, ready for an agent.
 - **Real document features.** HTML tables with repeating headers, page-break control, running header and footer bands, page numbers, custom fonts and images.
-- **Export to PDF, Word, Google Docs.** DOCX output is real editable text, not page images.
+- **Export to PDF, Word, Google Docs, Markdown.** DOCX output is real editable text, not page images.
 - **Agent-native.** File-based skills (`create-doc`, `apply-comments`, `create-theme`, ...) sync into the workspace. No MCP server. Works with Claude Code, Cursor, Codex, Gemini CLI, OpenCode, Windsurf, Zed, and anything else that reads `AGENTS.md`.
 - **Nothing to configure.** Vite, React, and TypeScript live inside the runtime. A workspace is `docs/`, an optional `open-pdf.config.ts`, and your agent skills.
 
@@ -85,7 +85,7 @@ Style with Tailwind classes via the `tw` prop. Content flows and the engine pagi
 | `open-pdf dev` | Dev server with live PDF preview and inspector. |
 | `open-pdf build` | Static site of the viewer. |
 | `open-pdf preview` | Serve the production build. |
-| `open-pdf export [docs...]` | Render docs to `export/`. `--format pdf` (default) or `docx`. |
+| `open-pdf export [docs...]` | Render docs to `export/`. `--format pdf` (default), `docx` or `md`. |
 | `open-pdf sync:skills` | Sync the built-in agent skills into the workspace. |
 | `open-pdf update` | Update `@autono/open-pdf` to the latest version and sync skills. |
 

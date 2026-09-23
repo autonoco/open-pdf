@@ -1,8 +1,9 @@
 import { docImportUrl } from 'virtual:open-pdf/docs';
 import { demoImportUrl } from 'virtual:open-pdf/themes';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { EditableFormat } from '../../../export/editable';
 import { docChangeIncludes } from '../docs';
-import type { RenderRequest, RenderResponse } from './render-worker';
+import type { ExportRequest, ExportResponse, RenderRequest, RenderResponse } from './render-worker';
 
 // One shared worker: renders are serialized in WASM anyway, and sharing keeps
 // the module cache (and WASM init cost) across docs.
@@ -222,6 +223,34 @@ export function renderCleanPdf(docId: string): Promise<Uint8Array> {
           docId,
           moduleUrl: docImportUrl(docId),
           inspect: false,
+        };
+        worker.postMessage(req);
+      }),
+  );
+}
+
+/** One-shot export of a doc as Word or Markdown, built from the same node tree as the PDF. */
+export function exportDoc(docId: string, format: EditableFormat): Promise<Uint8Array> {
+  const seq = ++seqCounter;
+  return getWorker().then(
+    (worker) =>
+      new Promise<Uint8Array>((resolve, reject) => {
+        const onMessage = (event: MessageEvent<ExportResponse>) => {
+          const msg = event.data;
+          if (msg.seq !== seq || (msg.type !== 'exported' && msg.type !== 'export-error')) return;
+          worker.removeEventListener('message', onMessage);
+          if (msg.type === 'exported') {
+            for (const warning of msg.warnings) console.warn(`[open-pdf] ${docId}: ${warning}`);
+            resolve(msg.bytes);
+          } else reject(new Error(msg.message));
+        };
+        worker.addEventListener('message', onMessage);
+        const req: ExportRequest = {
+          type: 'export',
+          seq,
+          docId,
+          moduleUrl: docImportUrl(docId),
+          format,
         };
         worker.postMessage(req);
       }),

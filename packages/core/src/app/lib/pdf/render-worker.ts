@@ -19,6 +19,7 @@ import { loadThemeDemo } from 'virtual:open-pdf/themes';
 import { fromJsx } from '@takumi-rs/helpers/jsx';
 import { createElement } from 'react';
 import { render } from 'takumi-pdf';
+import { type EditableFormat, exportEditable } from '../../../export/editable';
 import {
   collectImageSrcs,
   DEFAULT_PAGE,
@@ -44,6 +45,19 @@ export type RenderRequest = RenderSource & {
   inspect: boolean;
 };
 
+/** Clean one-shot export of a doc as an editable format (Word or Markdown). */
+export type ExportRequest = {
+  type: 'export';
+  seq: number;
+  docId: string;
+  moduleUrl: string;
+  format: EditableFormat;
+};
+
+export type ExportResponse =
+  | { type: 'exported'; seq: number; bytes: Uint8Array; warnings: string[] }
+  | { type: 'export-error'; seq: number; message: string };
+
 export type RenderResponse =
   | {
       type: 'rendered';
@@ -55,8 +69,7 @@ export type RenderResponse =
     }
   | { type: 'render-error'; seq: number; message: string };
 
-async function handleRender(req: RenderRequest) {
-  const start = performance.now();
+async function loadModule(req: RenderSource & { moduleUrl: string }) {
   const mod = import.meta.env.DEV
     ? await import(/* @vite-ignore */ req.moduleUrl)
     : 'themeId' in req
@@ -65,6 +78,37 @@ async function handleRender(req: RenderRequest) {
   if (typeof mod.default !== 'function') {
     throw new Error(`Doc module must default-export a component. Got: ${typeof mod.default}`);
   }
+  return mod;
+}
+
+async function fetchImage(src: string): Promise<ArrayBuffer> {
+  const r = await fetch(src);
+  if (!r.ok) throw new Error(`image fetch failed (${r.status}): ${src}`);
+  return r.arrayBuffer();
+}
+
+async function handleExport(req: ExportRequest) {
+  const mod = await loadModule(req);
+  const { node } = await fromJsx(createElement(mod.default));
+  const srcs = collectImageSrcs(node as TakumiNode);
+  const images = new Map(
+    await Promise.all(
+      srcs.map(async (src) => [src, new Uint8Array(await fetchImage(src))] as const),
+    ),
+  );
+  const { bytes, warnings } = await exportEditable(req.format, {
+    node: node as TakumiNode,
+    title: mod.meta?.title ?? req.docId,
+    pageOptions: mod.pageOptions ?? {},
+    images,
+  });
+  const msg: ExportResponse = { type: 'exported', seq: req.seq, bytes, warnings };
+  self.postMessage(msg, { transfer: [bytes.buffer] });
+}
+
+async function handleRender(req: RenderRequest) {
+  const start = performance.now();
+  const mod = await loadModule(req);
   const element = createElement(mod.default);
   const { node, css } = await fromJsx(element);
   const tags = req.inspect ? injectLocAnchors(node as TakumiNode) : {};
@@ -73,11 +117,7 @@ async function handleRender(req: RenderRequest) {
   // every src in the tree (dev-server URLs resolve against the worker origin).
   const images = collectImageSrcs(node as TakumiNode).map((src) => ({
     src,
-    data: () =>
-      fetch(src).then((r) => {
-        if (!r.ok) throw new Error(`image fetch failed (${r.status}): ${src}`);
-        return r.arrayBuffer();
-      }),
+    data: () => fetchImage(src),
   }));
   const bytes: Uint8Array = await render(node, {
     css,
@@ -91,8 +131,19 @@ async function handleRender(req: RenderRequest) {
   self.postMessage(msg, { transfer: [bytes.buffer] });
 }
 
-self.onmessage = (event: MessageEvent<RenderRequest>) => {
+self.onmessage = (event: MessageEvent<RenderRequest | ExportRequest>) => {
   const req = event.data;
+  if (req?.type === 'export') {
+    handleExport(req).catch((error) => {
+      const msg: ExportResponse = {
+        type: 'export-error',
+        seq: req.seq,
+        message: error instanceof Error ? error.message : String(error),
+      };
+      self.postMessage(msg);
+    });
+    return;
+  }
   if (req?.type !== 'render') return;
   handleRender(req).catch((error) => {
     const msg: RenderResponse = {
