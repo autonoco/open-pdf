@@ -65,7 +65,10 @@ function dataUri(bytes: Uint8Array): string {
 
 const isBold = (node: Node) => /\bfont-(semibold|bold|extrabold|black)\b/.test(node.tw ?? '');
 
-const escapeText = (s: string) => s.replace(/([\\`*_[\]<>])/g, '\\$1');
+// `|` is escaped everywhere so text can sit inside a table cell unchanged.
+const escapeText = (s: string) => s.replace(/([\\`*_[\]<>|])/g, '\\$1');
+const escapeUrl = (s: string) =>
+  s.replace(/[\s()|]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0')}`);
 const collapse = (s: string) => s.replace(/\s+/g, ' ');
 
 class MarkdownWriter {
@@ -80,6 +83,8 @@ class MarkdownWriter {
   private inlineNode(node: Node): string {
     if (node.type === 'text') {
       const text = escapeText(collapse(node.text ?? ''));
+      const href = node.tagName === 'a' ? node.attributes?.href : undefined;
+      if (href) return `[${text}](${escapeUrl(href)})`;
       return this.wrap(isBold(node) ? 'strong' : node.tagName, text);
     }
     if (node.type === 'image') return this.image(node);
@@ -89,7 +94,7 @@ class MarkdownWriter {
     const inner = this.inline(node.children ?? []);
     if (node.tagName === 'a') {
       const href = node.attributes?.href;
-      return href ? `[${inner}](${href})` : inner;
+      return href ? `[${inner}](${escapeUrl(href)})` : inner;
     }
     const wrapped = this.wrap(node.tagName, inner);
     return isBold(node) && !inner.includes('**') ? this.wrap('strong', wrapped) : wrapped;
@@ -110,7 +115,7 @@ class MarkdownWriter {
     if (!src || src.startsWith('data:') || src.trimStart().startsWith('<')) return '';
     const alt = node.attributes?.alt ?? '';
     const bytes = this.opts.images?.get(src);
-    return `![${escapeText(alt)}](${bytes ? dataUri(bytes) : src})`;
+    return `![${escapeText(alt)}](${bytes ? dataUri(bytes) : escapeUrl(src)})`;
   }
 
   /** Block walk: returns Markdown blocks (joined by blank lines by the caller). */
@@ -207,7 +212,7 @@ class MarkdownWriter {
           .join('<br>')
           .replace(/ {2}\n/g, '<br>')
           .replace(/\n+/g, ' ');
-    return text.replace(/\|/g, '\\|');
+    return text;
   }
 }
 

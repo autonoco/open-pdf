@@ -86,6 +86,21 @@ describe('markdownFromNodeTree', () => {
     expect(out).toBe('![Logo](data:image/png;base64,iVBORw==)\n');
   });
 
+  it('keeps links and backslashes intact inside table cells', async () => {
+    const out = await md(
+      <table>
+        <tbody>
+          <tr>
+            <td>
+              <a href="https://x.example/a|b (c)">C:\dir|x</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>,
+    );
+    expect(out).toBe('|  |\n| --- |\n| [C:\\\\dir\\|x](https://x.example/a%7Cb%20%28c%29) |\n');
+  });
+
   it('escapes Markdown syntax in text', async () => {
     expect(await md(<p>2 * 3 = [six]</p>)).toBe('2 \\* 3 = \\[six\\]\n');
   });
