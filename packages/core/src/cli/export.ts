@@ -6,7 +6,12 @@ import fg from 'fast-glob';
 import { createElement } from 'react';
 import { render } from 'takumi-pdf';
 import { createServer, mergeConfig } from 'vite';
-import { collectImageSrcs, DEFAULT_PAGE, type TakumiNode } from '../shared/takumi-doc.ts';
+import {
+  collectImageSrcs,
+  DEFAULT_PAGE,
+  insetBands,
+  type TakumiNode,
+} from '../shared/takumi-doc.ts';
 import { createViteConfig } from '../vite/config.ts';
 import { loadUserConfig } from '../vite/open-pdf-plugin.ts';
 
@@ -131,7 +136,7 @@ export async function exportPdfs(opts: ExportOptions = {}): Promise<void> {
           css,
           images: imageEntries,
           ...DEFAULT_PAGE,
-          ...pageOptions,
+          ...insetBands(pageOptions),
         });
       }
       const outFile = path.join(outDir, `${id}.${format}`);

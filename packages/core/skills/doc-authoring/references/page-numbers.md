@@ -39,6 +39,8 @@ export const pageOptions: PageOptions = {
   and counters lay out on one line.
 - Band root should be a full-width flex row (`tw="flex w-full …"`) —
   `justify-between` for corner pairs, `justify-center` for centered folios.
+- Bands are automatically inset by the page's left/right margin, so they
+  line up with the body column. Don't add horizontal padding to the band.
 - Keep bands to one line at 8–10px. With explicit margins a too-tall band
   overlaps content (the margin does not grow to fit it); with `'auto'`
   margins it eats the text column on every page.
