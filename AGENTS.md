@@ -33,15 +33,12 @@ Filter to one package: `pnpm core <script>` / `pnpm cli <script>`.
 ## Hard rules
 
 - **Biome must pass before commit.** Run `pnpm check` (or `pnpm check:fix`). CI and the user's review both expect a clean tree.
-- **If `packages/core` or `packages/cli` changes, add a changeset.** Run `pnpm changeset`, pick the right package(s) and bump (`patch` for fixes/polish, `minor` for new public API, `major` for breaking). Apps (`demo`, `web`) and root tooling do **not** need one.
-- **Changeset descriptions: short and direct.** One line, present-tense, what changed from a user's perspective. Match the tone of `.changeset/*.md` already in the repo. No paragraphs, no rationale, no "this PR…".
-  - Good: `Replace spinner with a hairline + sliding bar for doc and presenter loading states.`
-  - Bad: `This change introduces a new loading indicator because the previous spinner felt heavy and we wanted something more subtle for presentation contexts…`
-- Don't bump versions or edit `CHANGELOG.md` by hand — `changeset version` owns that.
+- **A merge to `main` triggers a release.** The release workflow tags the next minor version and publishes both packages unless the merge commit contains `[skip release]`. Do not merge a PR or change the release workflow without explicit release authorization.
+- Don't add changesets, bump package versions, or edit `CHANGELOG.md` by hand. The release workflow stamps versions in its checkout; manifests on `main` are not version-bumped.
 - Don't add dependencies casually. The `core` runtime ships to users; every dep inflates install size.
 - `packages/core/src/app/components/ui` is shadcn-generated and biome-ignored — leave it alone unless regenerating.
 - **Default to writing no comments.** Only add one when the WHY is non-obvious — a hidden constraint, a subtle invariant, a workaround for a specific bug, behavior that would surprise a reader. Don't explain WHAT the code does (well-named identifiers handle that), don't reference tasks/PRs/callers ("added for X", "used by Y"), don't write section-divider banners (`// ── Section ──`) or module-header descriptions, and don't leave commented-out code. If removing a comment wouldn't confuse a future reader, don't write it.
 
 ## Releasing (reference)
 
-`pnpm release` builds `core` + `cli` and runs `changeset publish`. Triggered by the maintainer, not by agents.
+`.github/workflows/release.yml` tags, builds, and publishes `core` + `cli` after a push to `main`. It can also recover an existing tag through `workflow_dispatch`. Agents must not trigger either release path without explicit authorization.
