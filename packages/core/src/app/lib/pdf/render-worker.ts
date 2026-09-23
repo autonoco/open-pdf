@@ -28,7 +28,7 @@ import {
   type TakumiNode,
 } from '../../../shared/takumi-doc';
 
-export type RenderSource = { docId: string } | { themeId: string };
+export type RenderSource = { docId: string } | { themeId: string } | { templateId: string };
 
 export type RenderRequest = RenderSource & {
   type: 'render';
@@ -70,11 +70,14 @@ export type RenderResponse =
   | { type: 'render-error'; seq: number; message: string };
 
 async function loadModule(req: RenderSource & { moduleUrl: string }) {
+  if (!import.meta.env.DEV && 'templateId' in req) {
+    throw new Error('Templates are only available in the dev server');
+  }
   const mod = import.meta.env.DEV
     ? await import(/* @vite-ignore */ req.moduleUrl)
     : 'themeId' in req
       ? await loadThemeDemo(req.themeId)
-      : await loadDoc(req.docId);
+      : await loadDoc((req as { docId: string }).docId);
   if (typeof mod.default !== 'function') {
     throw new Error(`Doc module must default-export a component. Got: ${typeof mod.default}`);
   }

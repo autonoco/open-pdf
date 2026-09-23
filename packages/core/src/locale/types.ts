@@ -40,6 +40,7 @@ export type Locale = {
     draft: string;
     duplicate: string;
     themes: string;
+    templates: string;
     assets: string;
     folders: string;
     docs: string;
@@ -496,6 +497,16 @@ export type Locale = {
     statusError: string;
   };
 
+  templates: {
+    title: string;
+    empty: string;
+    devOnly: string;
+    use: string;
+    creating: string;
+    created: string;
+    failed: string;
+    useAria: string;
+  };
   themes: {
     title: string;
     noThemesTitle: string;

@@ -75,6 +75,9 @@ type Row =
       kind: 'themes';
     }
   | {
+      kind: 'templates';
+    }
+  | {
       kind: 'assets';
     };
 
@@ -133,9 +136,11 @@ export function FolderItem({
         ? { type: 'emoji', value: '📝' }
         : row.kind === 'themes'
           ? { type: 'emoji', value: '🎨' }
-          : row.kind === 'assets'
-            ? { type: 'emoji', value: '🗂️' }
-            : row.folder.icon;
+          : row.kind === 'templates'
+            ? { type: 'emoji', value: '📄' }
+            : row.kind === 'assets'
+              ? { type: 'emoji', value: '🗂️' }
+              : row.folder.icon;
   const label =
     row.kind === 'all'
       ? t.home.docs
@@ -143,9 +148,11 @@ export function FolderItem({
         ? t.home.draft
         : row.kind === 'themes'
           ? t.home.themes
-          : row.kind === 'assets'
-            ? t.home.assets
-            : row.folder.name;
+          : row.kind === 'templates'
+            ? t.home.templates
+            : row.kind === 'assets'
+              ? t.home.assets
+              : row.folder.name;
 
   const commitRename = () => {
     if (row.kind !== 'folder') return;

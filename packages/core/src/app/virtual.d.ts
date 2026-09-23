@@ -51,3 +51,14 @@ declare module 'virtual:open-pdf/themes' {
   }>;
   export function demoImportUrl(id: string): string;
 }
+
+declare module 'virtual:open-pdf/templates' {
+  export type TemplateMeta = {
+    id: string;
+    title: string;
+    category: string;
+  };
+
+  export const templates: TemplateMeta[];
+  export function templateImportUrl(id: string): string;
+}

@@ -9,6 +9,7 @@ export type ApiContext = {
   docsRoot: string;
   globalAssetsRoot: string;
   manifestPath: string;
+  templatesRoot: string;
   coreVersion: string;
 };
 
@@ -16,6 +17,7 @@ export type ApiPluginOptions = {
   userCwd: string;
   docsDir?: string;
   assetsDir?: string;
+  templatesRoot: string;
   coreVersion: string;
 };
 
@@ -32,6 +34,7 @@ export function makeContext(opts: ApiPluginOptions): ApiContext {
     docsRoot,
     globalAssetsRoot,
     manifestPath,
+    templatesRoot: opts.templatesRoot,
     coreVersion: opts.coreVersion,
   };
 }

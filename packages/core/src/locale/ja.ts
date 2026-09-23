@@ -40,6 +40,7 @@ export const ja: Locale = {
     draft: '下書き',
     duplicate: '複製',
     themes: 'テーマ',
+    templates: 'テンプレート',
     assets: 'アセット',
     folders: 'フォルダ',
     docs: 'スライド',
@@ -468,6 +469,16 @@ export const ja: Locale = {
     statusError: '保存に失敗しました: {msg}',
   },
 
+  templates: {
+    title: 'テンプレート',
+    empty: '利用できるテンプレートはありません。',
+    devOnly: 'テンプレートは開発サーバーで利用できます。',
+    use: 'テンプレートを使う',
+    creating: '作成中…',
+    created: '{name} を作成しました',
+    failed: 'ドキュメントを作成できませんでした: {error}',
+    useAria: '{name} からドキュメントを作成',
+  },
   themes: {
     title: 'テーマ',
     noThemesTitle: 'テーマがまだありません',

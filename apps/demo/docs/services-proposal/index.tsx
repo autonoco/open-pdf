@@ -102,11 +102,11 @@ export default function Proposal() {
           </thead>
           <tbody>
             {phases.map((p) => (
-              <tr key={p.phase} tw="border-b border-slate-200">
-                <td tw="p-2 align-top font-bold">{p.phase}</td>
-                <td tw="p-2 align-top">{p.weeks}</td>
-                <td tw="p-2 align-top">{p.deliverable}</td>
-                <td tw="p-2 text-right align-top">{money(p.fee)}</td>
+              <tr key={p.phase}>
+                <td tw="border-b border-slate-200 p-2 align-top font-bold">{p.phase}</td>
+                <td tw="border-b border-slate-200 p-2 align-top">{p.weeks}</td>
+                <td tw="border-b border-slate-200 p-2 align-top">{p.deliverable}</td>
+                <td tw="border-b border-slate-200 p-2 text-right align-top">{money(p.fee)}</td>
               </tr>
             ))}
           </tbody>

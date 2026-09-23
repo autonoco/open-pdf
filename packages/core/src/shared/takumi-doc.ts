@@ -82,7 +82,8 @@ export function injectLocAnchors(root: TakumiNode): Record<string, string> {
 export function collectImageSrcs(root: TakumiNode): string[] {
   const srcs = new Set<string>();
   const visit = (node: TakumiNode) => {
-    if (node.type === 'image' && node.src && !node.src.startsWith('data:')) {
+    // Inline <svg> becomes an image node whose src is the markup itself.
+    if (node.type === 'image' && node.src && !/^(data:|\s*<)/.test(node.src)) {
       srcs.add(node.src);
     }
     for (const child of node.children ?? []) visit(child);

@@ -32,6 +32,7 @@
     "src/locale",
     "src/shared",
     "skills",
+    "templates",
     "README.md"
   ],
   "scripts": {

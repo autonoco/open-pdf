@@ -1,9 +1,16 @@
 import { docImportUrl } from 'virtual:open-pdf/docs';
+import { templateImportUrl } from 'virtual:open-pdf/templates';
 import { demoImportUrl } from 'virtual:open-pdf/themes';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { EditableFormat } from '../../../export/editable';
 import { docChangeIncludes } from '../docs';
-import type { ExportRequest, ExportResponse, RenderRequest, RenderResponse } from './render-worker';
+import type {
+  ExportRequest,
+  ExportResponse,
+  RenderRequest,
+  RenderResponse,
+  RenderSource,
+} from './render-worker';
 
 // One shared worker: renders are serialized in WASM anyway, and sharing keeps
 // the module cache (and WASM init cost) across docs.
@@ -136,10 +143,34 @@ export function useDocPdf(docId: string): DocPdfState & { rerender: () => void }
 }
 
 /**
- * Renders a theme's demo doc through the same worker as real docs. Theme file
+ * Theme demos render once per mount and on themeId change; theme/demo file
  * edits trigger a full reload, so there is no HMR re-kick here.
  */
 export function useThemeDemoPdf(themeId: string, enabled: boolean): DocPdfState {
+  return usePreviewPdf(
+    themeId,
+    enabled,
+    () => ({ themeId }),
+    () => demoImportUrl(themeId),
+  );
+}
+
+/** Built-in template preview, rendered once per mount. */
+export function useTemplatePdf(templateId: string): DocPdfState {
+  return usePreviewPdf(
+    templateId,
+    true,
+    () => ({ templateId }),
+    () => templateImportUrl(templateId),
+  );
+}
+
+function usePreviewPdf(
+  key: string,
+  enabled: boolean,
+  source: () => RenderSource,
+  importUrl: () => string,
+): DocPdfState {
   const [state, setState] = useState<DocPdfState>({
     bytes: null,
     tags: {},
@@ -149,6 +180,8 @@ export function useThemeDemoPdf(themeId: string, enabled: boolean): DocPdfState 
     version: 0,
   });
   const latestSeqRef = useRef(0);
+  const sourceRef = useRef({ source, importUrl });
+  sourceRef.current = { source, importUrl };
 
   useEffect(() => {
     setState({
@@ -159,12 +192,12 @@ export function useThemeDemoPdf(themeId: string, enabled: boolean): DocPdfState 
       durationMs: null,
       version: 0,
     });
-    if (!enabled) return;
+    if (!enabled || !key) return;
     const seq = ++seqCounter;
     latestSeqRef.current = seq;
     let moduleUrl: string;
     try {
-      moduleUrl = demoImportUrl(themeId);
+      moduleUrl = sourceRef.current.importUrl();
     } catch (e) {
       setState((s) => ({
         ...s,
@@ -195,10 +228,16 @@ export function useThemeDemoPdf(themeId: string, enabled: boolean): DocPdfState 
         }
       };
       worker.addEventListener('message', onMessage);
-      const req: RenderRequest = { type: 'render', seq, themeId, moduleUrl, inspect: false };
+      const req: RenderRequest = {
+        type: 'render',
+        seq,
+        ...sourceRef.current.source(),
+        moduleUrl,
+        inspect: false,
+      };
       worker.postMessage(req);
     });
-  }, [themeId, enabled]);
+  }, [key, enabled]);
 
   return state;
 }

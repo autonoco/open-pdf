@@ -27,11 +27,11 @@ const money = (n: number) =>
   </thead>
   <tbody>
     {items.map((it) => (
-      <tr key={it.sku} tw="border-b border-slate-200">
-        <td tw="p-2 align-top">{it.sku}</td>
-        <td tw="p-2 align-top">{it.name}</td>
-        <td tw="p-2 text-right align-top">{String(it.qty)}</td>
-        <td tw="p-2 text-right align-top">{money(it.qty * it.unit)}</td>
+      <tr key={it.sku}>
+        <td tw="border-b border-slate-200 p-2 align-top">{it.sku}</td>
+        <td tw="border-b border-slate-200 p-2 align-top">{it.name}</td>
+        <td tw="border-b border-slate-200 p-2 text-right align-top">{String(it.qty)}</td>
+        <td tw="border-b border-slate-200 p-2 text-right align-top">{money(it.qty * it.unit)}</td>
       </tr>
     ))}
   </tbody>
@@ -48,6 +48,9 @@ const money = (n: number) =>
   content, not header widths. (A hairline seam can still appear at a
   column boundary even without widths — upstream paint quirk, cosmetic;
   don't fight it with markup.)
+- **Row rules go on the cells, not the `<tr>`.** Borders on `<tr>` don't
+  paint; put `border-b` on every `<td>`/`<th>` of the row. Row *backgrounds*
+  (`bg-*` on `<tr>`) do paint.
 - `align-top` on cells when any column can wrap to two lines.
 - Two-line cells (title + muted detail) are a nested
   `<div tw="flex flex-col">` inside the `<td>` — keep the detail line short.

@@ -17,9 +17,16 @@ import { cn } from '@/lib/utils';
 import { CommandMenuTrigger } from '../components/command/command-menu';
 import { HomeCommandMenu } from '../components/command/home-command-menu';
 import { FolderIconChip } from '../components/sidebar/folder-item';
-import { ALL_DOCS_ID, ASSETS_ID, Sidebar, THEMES_ID } from '../components/sidebar/sidebar';
+import {
+  ALL_DOCS_ID,
+  ASSETS_ID,
+  Sidebar,
+  TEMPLATES_ID,
+  THEMES_ID,
+} from '../components/sidebar/sidebar';
 import { docIds } from '../lib/docs';
 import type { FoldersManifest } from '../lib/sdk';
+import { templates as templateRegistry } from '../lib/templates';
 import { themes as themeRegistry } from '../lib/themes';
 
 export type HomeOutletContext = {
@@ -41,6 +48,7 @@ export type HomeOutletContext = {
 function pathToSelectedId(pathname: string, search: URLSearchParams): string {
   if (pathname === '/themes' || pathname.startsWith('/themes/')) return THEMES_ID;
   if (pathname === '/assets') return ASSETS_ID;
+  if (pathname === '/templates') return TEMPLATES_ID;
   return search.get('f') ?? ALL_DOCS_ID;
 }
 
@@ -76,6 +84,7 @@ export function HomeShell() {
     (id: string) => {
       if (id === THEMES_ID) navigate('/themes', { replace: true });
       else if (id === ASSETS_ID) navigate('/assets', { replace: true });
+      else if (id === TEMPLATES_ID) navigate('/templates', { replace: true });
       else if (id === ALL_DOCS_ID) navigate('/', { replace: true });
       else navigate(`/?f=${encodeURIComponent(id)}`, { replace: true });
     },
@@ -146,6 +155,7 @@ export function HomeShell() {
           allCount={docIds.length}
           themesCount={themeRegistry.length}
           assetsCount={globalAssets.length}
+          templatesCount={templateRegistry.length}
           selectedId={selectedId}
           onSelect={selectFolder}
           onCreate={(name, icon) => create(name, icon)}
@@ -199,6 +209,7 @@ export function HomeShell() {
                   className={cn(
                     selectedId !== THEMES_ID &&
                       selectedId !== ASSETS_ID &&
+                      selectedId !== TEMPLATES_ID &&
                       'bg-muted text-foreground',
                   )}
                 >
@@ -214,6 +225,18 @@ export function HomeShell() {
                   <span className="flex-1 truncate">{t.home.themes}</span>
                   <span className="folio">{themeRegistry.length.toString().padStart(2, '0')}</span>
                 </DropdownMenuItem>
+                {import.meta.env.DEV && (
+                  <DropdownMenuItem
+                    onClick={() => selectFolder(TEMPLATES_ID)}
+                    className={cn(selectedId === TEMPLATES_ID && 'bg-muted text-foreground')}
+                  >
+                    <FolderIconChip icon={{ type: 'emoji', value: '📄' }} />
+                    <span className="flex-1 truncate">{t.home.templates}</span>
+                    <span className="folio">
+                      {templateRegistry.length.toString().padStart(2, '0')}
+                    </span>
+                  </DropdownMenuItem>
+                )}
                 {import.meta.env.DEV && (
                   <DropdownMenuItem
                     onClick={() => selectFolder(ASSETS_ID)}

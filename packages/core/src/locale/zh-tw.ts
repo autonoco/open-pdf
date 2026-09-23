@@ -40,6 +40,7 @@ export const zhTW: Locale = {
     draft: '草稿',
     duplicate: '複製',
     themes: '主題',
+    templates: '範本',
     assets: '素材',
     folders: '資料夾',
     docs: '投影片',
@@ -462,6 +463,16 @@ export const zhTW: Locale = {
     statusError: '儲存失敗：{msg}',
   },
 
+  templates: {
+    title: '範本',
+    empty: '目前沒有可用的範本。',
+    devOnly: '範本僅在開發伺服器中提供。',
+    use: '使用範本',
+    creating: '建立中…',
+    created: '已建立 {name}',
+    failed: '無法建立文件：{error}',
+    useAria: '從 {name} 建立文件',
+  },
   themes: {
     title: '主題',
     noThemesTitle: '尚無主題',
