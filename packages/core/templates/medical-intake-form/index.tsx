@@ -67,9 +67,9 @@ const cell = 'border-b border-r border-zinc-200 px-[10px] py-[6px]';
 const BlankTable = ({ headers, rows }: { headers: string[]; rows: string[] }) => (
   <table tw="w-full overflow-hidden rounded border-[1.5px] border-zinc-200 text-[11px]">
     <thead>
-      <tr tw="border-b border-zinc-200 bg-zinc-100 font-semibold">
+      <tr tw="bg-zinc-100 font-semibold">
         {headers.map((h) => (
-          <th key={h} tw={`${head} text-left`}>
+          <th key={h} tw={`border-b border-zinc-200 ${head} text-left`}>
             {h}
           </th>
         ))}
@@ -152,11 +152,23 @@ export default function MedicalIntakeForm() {
         ]}
       />
 
-      <div tw="mb-2 flex items-end justify-between" style={{ breakBefore: 'page' }}>
-        <span tw="text-[13px] font-bold">
-          Harbor Point Family Clinic, Patient Intake Form (continued)
-        </span>
-        <span tw="text-[10px] text-zinc-500">(305) 555-0118</span>
+      <div tw="mb-2 flex flex-col" style={{ breakBefore: 'page' }}>
+        <div tw="flex items-end justify-between">
+          <span tw="text-[13px] font-bold">
+            Harbor Point Family Clinic, Patient Intake Form (continued)
+          </span>
+          <span tw="text-[10px] text-zinc-500">(305) 555-0118</span>
+        </div>
+        <div tw="mt-2 flex text-[10px] text-zinc-500" style={{ gap: 20 }}>
+          <div tw="flex flex-1 items-end">
+            <span tw="mr-2">Patient name</span>
+            <div tw="h-4 flex-1 border-b border-zinc-300" />
+          </div>
+          <div tw="flex w-[200px] items-end">
+            <span tw="mr-2">Date of birth</span>
+            <div tw="h-4 flex-1 border-b border-zinc-300" />
+          </div>
+        </div>
       </div>
 
       <section tw="mb-3 flex flex-col">

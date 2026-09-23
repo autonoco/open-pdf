@@ -149,7 +149,7 @@ export default function OperationsReport() {
       <section tw="flex flex-col p-4" style={{ breakBefore: 'page', breakInside: 'avoid' }}>
         <Eyebrow>Performance Trend</Eyebrow>
         <div tw="flex flex-col rounded border border-zinc-200 p-3">
-          <span tw="text-[12px] font-semibold">Throughput by week</span>
+          <span tw="text-[12px] font-semibold">Throughput by stream</span>
           <span tw="mb-3 text-[9px] text-zinc-500">Resolved workload distribution</span>
           <div tw="flex flex-col py-2">
             <HorizontalBar label="Incident" value={throughput[0].value} />
@@ -164,12 +164,12 @@ export default function OperationsReport() {
         <Eyebrow>Delivery Table</Eyebrow>
         <table tw="w-full text-[10px]">
           <thead>
-            <tr tw="border-b border-zinc-200 bg-zinc-100 font-semibold">
-              <th tw="px-2 py-[2px] text-left">Stream</th>
-              <th tw="px-2 py-[2px] text-left">Owner</th>
-              <th tw="px-2 py-[2px] text-center">Status</th>
-              <th tw="px-2 py-[2px] text-right">Progress</th>
-              <th tw="px-2 py-[2px] text-right">Risk</th>
+            <tr tw="bg-zinc-100 font-semibold">
+              <th tw="border-b border-zinc-200 px-2 py-[2px] text-left">Stream</th>
+              <th tw="border-b border-zinc-200 px-2 py-[2px] text-left">Owner</th>
+              <th tw="border-b border-zinc-200 px-2 py-[2px] text-center">Status</th>
+              <th tw="border-b border-zinc-200 px-2 py-[2px] text-right">Progress</th>
+              <th tw="border-b border-zinc-200 px-2 py-[2px] text-right">Risk</th>
             </tr>
           </thead>
           <tbody>

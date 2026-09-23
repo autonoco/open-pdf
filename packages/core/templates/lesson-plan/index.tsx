@@ -141,11 +141,11 @@ export default function LessonPlan() {
         <Label>Lesson Sequence</Label>
         <table tw="w-full overflow-hidden rounded border-[1.5px] border-zinc-200 text-[11px]">
           <thead>
-            <tr tw="border-b border-zinc-200 bg-zinc-100 font-semibold">
-              <th tw="px-[10px] py-[6px] text-left">Time</th>
-              <th tw="px-[10px] py-[6px] text-left">Activity</th>
-              <th tw="px-[10px] py-[6px] text-left">Description</th>
-              <th tw="px-[10px] py-[6px] text-left">Notes</th>
+            <tr tw="bg-zinc-100 font-semibold">
+              <th tw="border-b border-zinc-200 px-[10px] py-[6px] text-left">Time</th>
+              <th tw="border-b border-zinc-200 px-[10px] py-[6px] text-left">Activity</th>
+              <th tw="border-b border-zinc-200 px-[10px] py-[6px] text-left">Description</th>
+              <th tw="border-b border-zinc-200 px-[10px] py-[6px] text-left">Notes</th>
             </tr>
           </thead>
           <tbody>

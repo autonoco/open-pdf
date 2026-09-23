@@ -29,26 +29,35 @@ export async function createDocFromTemplate(
   }
 
   const root = path.resolve(docsRoot);
-  const exists = (id: string) =>
-    fs.access(path.join(root, id)).then(
+  await fs.mkdir(root, { recursive: true });
+  // mkdir without `recursive` fails with EEXIST, so it atomically claims the id.
+  const reserve = (id: string) =>
+    fs.mkdir(path.join(root, id)).then(
       () => true,
-      () => false,
+      (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EEXIST') return false;
+        throw err;
+      },
     );
   let docId: string;
   if (desiredId !== undefined) {
     if (!DOC_ID_RE.test(desiredId)) return { ok: false, status: 400, error: 'invalid docId' };
-    if (await exists(desiredId)) return { ok: false, status: 409, error: 'doc already exists' };
+    if (!(await reserve(desiredId))) return { ok: false, status: 409, error: 'doc already exists' };
     docId = desiredId;
   } else {
     docId = templateId;
-    for (let n = 2; await exists(docId); n++) docId = `${templateId}-${n}`;
+    for (let n = 2; !(await reserve(docId)); n++) docId = `${templateId}-${n}`;
   }
 
   const stamped = CREATED_AT_RE.test(source)
     ? source.replace(CREATED_AT_RE, `$1'${now.toISOString()}'`)
     : source;
-  await fs.mkdir(path.join(root, docId), { recursive: true });
-  await fs.writeFile(path.join(root, docId, 'index.tsx'), stamped, { flag: 'wx' });
+  try {
+    await fs.writeFile(path.join(root, docId, 'index.tsx'), stamped, { flag: 'wx' });
+  } catch (err) {
+    await fs.rm(path.join(root, docId), { recursive: true, force: true });
+    throw err;
+  }
   return { ok: true, docId };
 }
 

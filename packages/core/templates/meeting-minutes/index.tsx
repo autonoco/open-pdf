@@ -169,11 +169,11 @@ export default function MeetingMinutes() {
         <Label>Action Items</Label>
         <table tw="w-full overflow-hidden rounded border-[1.5px] border-zinc-200 text-[11px]">
           <thead>
-            <tr tw="border-b border-zinc-200 bg-zinc-100 font-semibold">
-              <th tw="px-[10px] py-[6px] text-left">Task</th>
-              <th tw="px-[10px] py-[6px] text-center">Owner</th>
-              <th tw="px-[10px] py-[6px] text-center">Due Date</th>
-              <th tw="px-[10px] py-[6px] text-center">Status</th>
+            <tr tw="bg-zinc-100 font-semibold">
+              <th tw="border-b border-zinc-200 px-[10px] py-[6px] text-left">Task</th>
+              <th tw="border-b border-zinc-200 px-[10px] py-[6px] text-center">Owner</th>
+              <th tw="border-b border-zinc-200 px-[10px] py-[6px] text-center">Due Date</th>
+              <th tw="border-b border-zinc-200 px-[10px] py-[6px] text-center">Status</th>
             </tr>
           </thead>
           <tbody>

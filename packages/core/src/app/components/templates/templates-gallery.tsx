@@ -80,9 +80,9 @@ function TemplateCard({
         </span>
       </div>
       <div className="mt-3 flex items-baseline justify-between gap-2">
-        <h3 className="min-w-0 truncate font-heading text-[14px] font-medium tracking-tight">
+        <h2 className="min-w-0 truncate font-heading text-[14px] font-medium tracking-tight">
           {template.title}
-        </h3>
+        </h2>
         <span className="eyebrow shrink-0">{template.category}</span>
       </div>
     </button>

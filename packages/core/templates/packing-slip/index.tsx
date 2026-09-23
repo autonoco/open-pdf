@@ -78,13 +78,13 @@ export default function PackingSlip() {
 
       <table tw="w-full overflow-hidden rounded border-[1.5px] border-zinc-200 text-[11px]">
         <thead>
-          <tr tw="border-b border-zinc-200 bg-zinc-100 font-semibold">
-            <th tw={`${head} text-left`}>Item</th>
-            <th tw={`${head} text-center`}>SKU</th>
-            <th tw={`${head} text-center`}>Packed</th>
-            <th tw={`${head} text-center`}>Ordered</th>
-            <th tw={`${head} text-right`}>Unit Price</th>
-            <th tw="px-[10px] py-[6px] text-right">Total</th>
+          <tr tw="bg-zinc-100 font-semibold">
+            <th tw={`border-b border-zinc-200 ${head} text-left`}>Item</th>
+            <th tw={`border-b border-zinc-200 ${head} text-center`}>SKU</th>
+            <th tw={`border-b border-zinc-200 ${head} text-center`}>Packed</th>
+            <th tw={`border-b border-zinc-200 ${head} text-center`}>Ordered</th>
+            <th tw={`border-b border-zinc-200 ${head} text-right`}>Unit Price</th>
+            <th tw="border-b border-zinc-200 px-[10px] py-[6px] text-right">Total</th>
           </tr>
         </thead>
         <tbody>

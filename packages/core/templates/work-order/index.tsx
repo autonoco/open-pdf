@@ -120,12 +120,12 @@ export default function WorkOrder() {
         <Label>Parts Used</Label>
         <table tw="w-full overflow-hidden rounded border-[1.5px] border-zinc-200">
           <thead>
-            <tr tw="border-b border-zinc-200 bg-zinc-100 font-semibold">
-              <th tw={`${head} text-left`}>Part #</th>
-              <th tw={`${head} text-left`}>Description</th>
-              <th tw={`${head} text-center`}>Qty</th>
-              <th tw={`${head} text-right`}>Unit Price</th>
-              <th tw="px-[10px] py-[6px] text-right">Total</th>
+            <tr tw="bg-zinc-100 font-semibold">
+              <th tw={`border-b border-zinc-200 ${head} text-left`}>Part #</th>
+              <th tw={`border-b border-zinc-200 ${head} text-left`}>Description</th>
+              <th tw={`border-b border-zinc-200 ${head} text-center`}>Qty</th>
+              <th tw={`border-b border-zinc-200 ${head} text-right`}>Unit Price</th>
+              <th tw="border-b border-zinc-200 px-[10px] py-[6px] text-right">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -148,12 +148,12 @@ export default function WorkOrder() {
         <Label>Labor</Label>
         <table tw="w-full overflow-hidden rounded border-[1.5px] border-zinc-200">
           <thead>
-            <tr tw="border-b border-zinc-200 bg-zinc-100 font-semibold">
-              <th tw={`${head} text-left`}>Description</th>
-              <th tw={`${head} text-left`}>Technician</th>
-              <th tw={`${head} text-center`}>Hours</th>
-              <th tw={`${head} text-right`}>Rate</th>
-              <th tw="px-[10px] py-[6px] text-right">Total</th>
+            <tr tw="bg-zinc-100 font-semibold">
+              <th tw={`border-b border-zinc-200 ${head} text-left`}>Description</th>
+              <th tw={`border-b border-zinc-200 ${head} text-left`}>Technician</th>
+              <th tw={`border-b border-zinc-200 ${head} text-center`}>Hours</th>
+              <th tw={`border-b border-zinc-200 ${head} text-right`}>Rate</th>
+              <th tw="border-b border-zinc-200 px-[10px] py-[6px] text-right">Total</th>
             </tr>
           </thead>
           <tbody>

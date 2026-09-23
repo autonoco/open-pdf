@@ -217,12 +217,12 @@ export default function FinancialReport() {
         <Eyebrow>Delivery Table</Eyebrow>
         <table tw="w-full text-[10px]">
           <thead>
-            <tr tw="border-b border-zinc-200 bg-zinc-100 font-semibold">
-              <th tw="px-2 py-[2px] text-left">Stream</th>
-              <th tw="px-2 py-[2px] text-left">Owner</th>
-              <th tw="px-2 py-[2px] text-center">Status</th>
-              <th tw="px-2 py-[2px] text-right">Progress</th>
-              <th tw="px-2 py-[2px] text-right">Risk</th>
+            <tr tw="bg-zinc-100 font-semibold">
+              <th tw="border-b border-zinc-200 px-2 py-[2px] text-left">Stream</th>
+              <th tw="border-b border-zinc-200 px-2 py-[2px] text-left">Owner</th>
+              <th tw="border-b border-zinc-200 px-2 py-[2px] text-center">Status</th>
+              <th tw="border-b border-zinc-200 px-2 py-[2px] text-right">Progress</th>
+              <th tw="border-b border-zinc-200 px-2 py-[2px] text-right">Risk</th>
             </tr>
           </thead>
           <tbody>

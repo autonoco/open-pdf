@@ -196,7 +196,7 @@ export default function SecurityReport() {
         <div tw="flex flex-wrap justify-between" style={{ rowGap: 8 }}>
           <Metric label="Critical Vulns" value="2" trend="-3 from last sprint" tone="success" />
           <Metric label="Patch SLA" value="92.0%" trend="+5.3 pts" tone="success" />
-          <Metric label="Open Findings" value="41" trend="+4" tone="warning" />
+          <Metric label="Open Findings" value={String(donutTotal)} trend="+4" tone="warning" />
           <Metric label="Control Score" value="84/100" trend="+2 pts" tone="info" />
         </div>
       </section>
@@ -214,12 +214,12 @@ export default function SecurityReport() {
         <Eyebrow>Delivery Table</Eyebrow>
         <table tw="w-full text-[10px]">
           <thead>
-            <tr tw="border-b border-zinc-200 bg-zinc-100 font-semibold">
-              <th tw="px-2 py-[2px] text-left">Stream</th>
-              <th tw="px-2 py-[2px] text-left">Owner</th>
-              <th tw="px-2 py-[2px] text-center">Status</th>
-              <th tw="px-2 py-[2px] text-right">Progress</th>
-              <th tw="px-2 py-[2px] text-right">Risk</th>
+            <tr tw="bg-zinc-100 font-semibold">
+              <th tw="border-b border-zinc-200 px-2 py-[2px] text-left">Stream</th>
+              <th tw="border-b border-zinc-200 px-2 py-[2px] text-left">Owner</th>
+              <th tw="border-b border-zinc-200 px-2 py-[2px] text-center">Status</th>
+              <th tw="border-b border-zinc-200 px-2 py-[2px] text-right">Progress</th>
+              <th tw="border-b border-zinc-200 px-2 py-[2px] text-right">Risk</th>
             </tr>
           </thead>
           <tbody>

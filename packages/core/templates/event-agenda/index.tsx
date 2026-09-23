@@ -238,6 +238,8 @@ const groupByTime = (sessions: Session[]) => {
   return groups;
 };
 
+const sharedEnd = (sessions: Session[]) => sessions.every((s) => s.endTime === sessions[0].endTime);
+
 const BreakCard = ({ session }: { session: Session }) => (
   <div tw="flex flex-1 flex-col rounded-md border border-dashed border-zinc-200 bg-zinc-100 px-3 py-2">
     <div tw="flex items-center justify-between">
@@ -252,7 +254,7 @@ const BreakCard = ({ session }: { session: Session }) => (
   </div>
 );
 
-const SessionCard = ({ session }: { session: Session }) => {
+const SessionCard = ({ session, showEnd }: { session: Session; showEnd: boolean }) => {
   const track = session.track ? trackStyles[session.track] : undefined;
   return (
     <div
@@ -268,6 +270,9 @@ const SessionCard = ({ session }: { session: Session }) => {
           <span tw="rounded-sm border border-zinc-200 bg-zinc-100 px-1.5 text-[9px] font-semibold text-zinc-500">
             {session.room}
           </span>
+        )}
+        {showEnd && (
+          <span tw="text-[9px] font-semibold text-zinc-500">until {session.endTime}</span>
         )}
       </div>
       <span tw="text-[12px] font-bold leading-tight">{session.title}</span>
@@ -310,14 +315,16 @@ const DaySchedule = ({ day, index }: { day: (typeof days)[number]; index: number
       <div key={slot.time} tw="mb-2.5 flex" style={{ breakInside: 'avoid' }}>
         <div tw="flex w-[104px] flex-col pt-0.5">
           <span tw="text-[12px] font-bold">{slot.time}</span>
-          <span tw="text-[10px] text-zinc-500">to {slot.sessions[0].endTime}</span>
+          {sharedEnd(slot.sessions) && (
+            <span tw="text-[10px] text-zinc-500">to {slot.sessions[0].endTime}</span>
+          )}
         </div>
         {slot.sessions.length === 1 && slot.sessions[0].isBreak ? (
           <BreakCard session={slot.sessions[0]} />
         ) : (
           <div tw="flex flex-1 gap-2.5">
             {slot.sessions.map((s) => (
-              <SessionCard key={s.title} session={s} />
+              <SessionCard key={s.title} session={s} showEnd={!sharedEnd(slot.sessions)} />
             ))}
           </div>
         )}
