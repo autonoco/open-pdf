@@ -29,6 +29,7 @@
     "env.d.ts",
     "src/app",
     "src/locale",
+    "src/shared",
     "skills",
     "README.md"
   ],
