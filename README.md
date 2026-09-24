@@ -21,7 +21,7 @@ npm run dev
 
 Open the workspace in your coding agent and ask for a document. The bundled `create-doc` skill writes `docs/<id>/index.tsx`; the preview at `http://localhost:5173` updates on every save.
 
-Requires Node.js 18+.
+Requires Node.js 20.19+ or 22.12+.
 
 ## Updating
 
