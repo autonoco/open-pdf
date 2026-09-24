@@ -1,6 +1,8 @@
 // Helpers shared by the preview render worker (browser) and the export CLI
 // (Node). Keep this module environment-neutral: no DOM, no node: imports.
 
+import { createElement, type ReactNode } from 'react';
+
 export type TakumiNode = {
   type?: string;
   src?: string;
@@ -12,6 +14,39 @@ export type TakumiNode = {
 // Keep preview and export rendering identical: same defaults on both paths.
 // Engine margins are numbers (CSS px) or 'auto' — CSS length strings throw.
 export const DEFAULT_PAGE = { size: 'a4', margin: 48 } as const;
+
+// The engine's 'auto' floor for sides that hold no band (left/right).
+const AUTO_SIDE = 37.8;
+
+type BandPageOptions = {
+  margin?: unknown;
+  header?: unknown;
+  footer?: unknown;
+};
+
+const sideOf = (margin: unknown, side: 'left' | 'right'): number => {
+  const value =
+    margin && typeof margin === 'object' ? (margin as Record<string, unknown>)[side] : margin;
+  return typeof value === 'number' ? value : AUTO_SIDE;
+};
+
+/**
+ * The engine lays header/footer bands out at the full page width, so band
+ * text lands flush against the paper edge. Inset each band by the page's
+ * left/right margin so it lines up with the body column.
+ */
+export function insetBands<T extends BandPageOptions>(options: T): T {
+  const margin = options.margin ?? DEFAULT_PAGE.margin;
+  const style = {
+    display: 'flex',
+    width: '100%',
+    paddingLeft: sideOf(margin, 'left'),
+    paddingRight: sideOf(margin, 'right'),
+  };
+  const inset = (band: unknown) =>
+    band == null || band === false ? band : createElement('div', { style }, band as ReactNode);
+  return { ...options, header: inset(options.header), footer: inset(options.footer) };
+}
 
 /** Sentinel URL host carrying source locations through PDF link annotations. */
 export const LOC_URL_PREFIX = 'https://loc.invalid/?p=';

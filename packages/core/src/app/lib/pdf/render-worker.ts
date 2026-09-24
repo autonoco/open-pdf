@@ -23,6 +23,7 @@ import {
   collectImageSrcs,
   DEFAULT_PAGE,
   injectLocAnchors,
+  insetBands,
   type TakumiNode,
 } from '../../../shared/takumi-doc';
 
@@ -67,7 +68,7 @@ async function handleRender(req: RenderRequest) {
   const element = createElement(mod.default);
   const { node, css } = await fromJsx(element);
   const tags = req.inspect ? injectLocAnchors(node as TakumiNode) : {};
-  const pageOptions = mod.pageOptions ?? {};
+  const pageOptions = insetBands(mod.pageOptions ?? {});
   // The engine does not fetch image URLs itself — hand it lazy loaders for
   // every src in the tree (dev-server URLs resolve against the worker origin).
   const images = collectImageSrcs(node as TakumiNode).map((src) => ({
