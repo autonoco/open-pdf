@@ -52,6 +52,54 @@ describe('generateDocsModule', () => {
 });
 
 describe('openPdfPlugin file watching', () => {
+  it('discovers the first document when docs did not exist at startup', async () => {
+    await withDocsRoot(async (root) => {
+      const userCwd = path.join(root, 'project');
+      const viteRoot = path.join(root, 'vite-app');
+      const generatedRoot = path.join(userCwd, 'generated');
+      const docsRoot = path.join(generatedRoot, 'docs');
+      await Promise.all([fs.mkdir(userCwd), fs.mkdir(viteRoot)]);
+      const server = await createServer({
+        root: viteRoot,
+        configFile: false,
+        plugins: [
+          openPdfPlugin({ userCwd, config: { docsDir: 'generated/docs' }, coreVersion: 'test' }),
+        ],
+        server: { middlewareMode: true },
+      });
+      try {
+        expect((await server.transformRequest('virtual:open-pdf/docs'))?.code).toContain(
+          'export const docIds = [];',
+        );
+        await vi.waitFor(() => expect(server.watcher.getWatched()[userCwd]).toBeDefined());
+        const docsAppeared = new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('docs root was not watched')), 2000);
+          server.watcher.on('addDir', (dir) => {
+            if (dir === docsRoot) {
+              clearTimeout(timeout);
+              resolve();
+            }
+          });
+        });
+        await fs.mkdir(generatedRoot);
+        await vi.waitFor(() => expect(server.watcher.getWatched()[generatedRoot]).toBeDefined());
+        await fs.mkdir(docsRoot);
+        await docsAppeared;
+        await vi.waitFor(() => expect(server.watcher.getWatched()[docsRoot]).toBeDefined());
+        const send = vi.spyOn(server.ws, 'send');
+        await writeDoc(docsRoot, 'first-doc');
+        await vi.waitFor(() => expect(send).toHaveBeenCalledWith({ type: 'full-reload' }), {
+          timeout: 2000,
+        });
+        expect((await server.transformRequest('virtual:open-pdf/docs'))?.code).toContain(
+          'export const docIds = ["first-doc"];',
+        );
+      } finally {
+        await server.close();
+      }
+    });
+  });
+
   it('reloads when a new document directory is discovered', async () => {
     await withDocsRoot(async (root) => {
       await fs.mkdir(path.join(root, 'docs'));

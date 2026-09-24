@@ -316,11 +316,18 @@ export function openPdfPlugin(opts: OpenPdfPluginOptions): Plugin {
       // user's docs folder by default. Add it explicitly — and pass the
       // directory itself, since Vite sets `disableGlobbing: true` and would
       // otherwise treat a glob pattern as a literal path.
-      if (existsSync(docsRoot)) server.watcher.add(docsRoot);
+      let watchedRoot = docsRoot;
+      while (!existsSync(watchedRoot)) {
+        const parent = path.dirname(watchedRoot);
+        if (parent === watchedRoot) break;
+        watchedRoot = parent;
+      }
+      server.watcher.add(watchedRoot);
       server.watcher.on('add', (p) => {
         if (isDocEntry(p)) reload();
       });
       server.watcher.on('addDir', (p) => {
+        if (p === docsRoot && watchedRoot !== docsRoot) server.watcher.add(docsRoot);
         if (path.dirname(p) === docsRoot && DOC_ID_RE.test(path.basename(p))) reload();
       });
       server.watcher.on('unlink', (p) => {
