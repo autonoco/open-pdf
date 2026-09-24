@@ -22,8 +22,8 @@
     "cli": "pnpm --filter @autono/create-open-pdf"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.10",
-    "turbo": "^2.10.8",
+    "@biomejs/biome": "2.5.14",
+    "turbo": "^2.11.3",
     "vitest": "^4.1.11"
   }
 }
