@@ -7,7 +7,8 @@ import type { ApiContext } from './context.ts';
 // Surface folder-manifest and asset-tree mutations as HMR pings so the
 // editor's panels can refresh without a full reload.
 export function registerWatchers(server: ViteDevServer, ctx: ApiContext): void {
-  server.watcher.add(ctx.manifestPath);
+  // The docs root is watched by openPdfPlugin. Do not register the absent
+  // manifest as a separate watch: that can hide newly added doc directories.
   server.watcher.on('change', (p) => {
     if (p === ctx.manifestPath) {
       server.ws.send({ type: 'custom', event: 'open-pdf:files-changed' });

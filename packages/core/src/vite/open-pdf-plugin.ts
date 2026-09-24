@@ -320,6 +320,9 @@ export function openPdfPlugin(opts: OpenPdfPluginOptions): Plugin {
       server.watcher.on('add', (p) => {
         if (isDocEntry(p)) reload();
       });
+      server.watcher.on('addDir', (p) => {
+        if (path.dirname(p) === docsRoot && DOC_ID_RE.test(path.basename(p))) reload();
+      });
       server.watcher.on('unlink', (p) => {
         if (isDocEntry(p)) reload();
       });
@@ -333,7 +336,9 @@ export function openPdfPlugin(opts: OpenPdfPluginOptions): Plugin {
           if (mod) server.moduleGraph.invalidateModule(mod);
         }, 100);
       };
-      server.watcher.add(foldersManifestPath);
+      // The docs directory watch covers this file, including its creation.
+      // Explicitly watching the absent manifest can prevent chokidar from
+      // discovering new doc directories on mounted filesystems.
       server.watcher.on('change', (p) => {
         if (p === foldersManifestPath) invalidateFolders();
       });
