@@ -15,7 +15,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/app/*"],
       // The workspace has @types/react 18 (core, demo) and 19 (web). pnpm hoists one of
