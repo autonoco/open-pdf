@@ -40,6 +40,7 @@ export const en: Locale = {
     draft: 'Draft',
     duplicate: 'Duplicate',
     themes: 'Themes',
+    templates: 'Templates',
     assets: 'Assets',
     folders: 'Folders',
     docs: 'Docs',
@@ -464,6 +465,16 @@ export const en: Locale = {
     statusError: 'Save failed: {msg}',
   },
 
+  templates: {
+    title: 'Templates',
+    empty: 'No templates available.',
+    devOnly: 'Templates are available in the dev server.',
+    use: 'Use template',
+    creating: 'Creating…',
+    created: 'Created {name}',
+    failed: 'Could not create doc: {error}',
+    useAria: 'Create a doc from {name}',
+  },
   themes: {
     title: 'Themes',
     noThemesTitle: 'No themes yet',

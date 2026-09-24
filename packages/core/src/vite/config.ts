@@ -10,6 +10,7 @@ import { designPlugin } from './design-plugin.ts';
 import { locTagsPlugin } from './loc-tags-plugin.ts';
 import { notesPlugin } from './notes-plugin.ts';
 import { loadUserConfig, type OpenPdfConfig, openPdfPlugin } from './open-pdf-plugin.ts';
+import { templatesPlugin } from './templates-plugin.ts';
 import { themesPlugin } from './themes-plugin.ts';
 
 function findPackageRoot(fromFile: string): string {
@@ -23,6 +24,8 @@ function findPackageRoot(fromFile: string): string {
 
 const PKG_ROOT = findPackageRoot(fileURLToPath(import.meta.url));
 const APP_ROOT = path.join(PKG_ROOT, 'src', 'app');
+const TEMPLATES_ROOT = path.join(PKG_ROOT, 'templates');
+const PKG_ENTRY = path.join(PKG_ROOT, 'dist', 'index.js');
 
 function readCoreVersion(): string {
   try {
@@ -62,8 +65,15 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
       tailwindcss(),
       openPdfPlugin({ userCwd, config, coreVersion: CORE_VERSION }),
       themesPlugin({ userCwd, config }),
+      templatesPlugin({ templatesRoot: TEMPLATES_ROOT, pkgEntry: PKG_ENTRY }),
       designPlugin({ userCwd }),
-      apiPlugin({ userCwd, docsDir, assetsDir, coreVersion: CORE_VERSION }),
+      apiPlugin({
+        userCwd,
+        docsDir,
+        assetsDir,
+        templatesRoot: TEMPLATES_ROOT,
+        coreVersion: CORE_VERSION,
+      }),
       notesPlugin({ userCwd, docsDir }),
       currentPlugin({ userCwd, docsDir }),
     ],

@@ -16,6 +16,7 @@ export const ALL_DOCS_ID = '__all__';
 export const DRAFT_ID = 'draft';
 export const THEMES_ID = '__themes__';
 export const ASSETS_ID = '__assets__';
+export const TEMPLATES_ID = '__templates__';
 
 export const FOLDER_DND_MIME = 'application/x-folder-id';
 
@@ -25,6 +26,7 @@ export function Sidebar({
   allCount,
   themesCount,
   assetsCount,
+  templatesCount,
   selectedId,
   onSelect,
   onCreate,
@@ -41,6 +43,7 @@ export function Sidebar({
   allCount: number;
   themesCount: number;
   assetsCount: number;
+  templatesCount: number;
   selectedId: string;
   onSelect: (id: string) => void;
   onCreate: (name: string, icon: FolderIcon) => Promise<Folder> | undefined;
@@ -154,6 +157,15 @@ export function Sidebar({
           onSelect={() => onSelect(THEMES_ID)}
           onDropDoc={() => {}}
         />
+        {import.meta.env.DEV && (
+          <FolderItem
+            row={{ kind: 'templates' }}
+            count={templatesCount}
+            selected={selectedId === TEMPLATES_ID}
+            onSelect={() => onSelect(TEMPLATES_ID)}
+            onDropDoc={() => {}}
+          />
+        )}
         {import.meta.env.DEV && (
           <FolderItem
             row={{ kind: 'assets' }}

@@ -146,7 +146,11 @@ class DocxBuilder {
     const src = node.src ?? '';
     const bytes = this.images.get(src);
     if (!bytes) {
-      this.warnings.push(`image skipped (no bytes): ${src}`);
+      this.warnings.push(
+        src.trimStart().startsWith('<')
+          ? 'inline <svg> skipped (not representable in DOCX v1)'
+          : `image skipped (no bytes): ${src}`,
+      );
       return '';
     }
     const isPng = bytes[0] === 0x89 && bytes[1] === 0x50;

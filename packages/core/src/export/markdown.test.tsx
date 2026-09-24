@@ -77,6 +77,36 @@ describe('markdownFromNodeTree', () => {
     expect(out).toBe('1. One\n2. Two\n');
   });
 
+  it('drops markers the doc draws inside list items', async () => {
+    const numbered = await md(
+      <ul>
+        <li tw="flex">
+          <span>1.</span>
+          <span>Warm up</span>
+        </li>
+        <li tw="flex">
+          <span>2.</span>
+          <span>Practice</span>
+        </li>
+      </ul>,
+    );
+    expect(numbered).toBe('1. Warm up\n2. Practice\n');
+    const bullets = await md(
+      <ol>
+        <li>1. Review minutes</li>
+        <li>2. Budget</li>
+      </ol>,
+    );
+    expect(bullets).toBe('1. Review minutes\n2. Budget\n');
+    expect(
+      await md(
+        <ul>
+          <li>• Coffee</li>
+        </ul>,
+      ),
+    ).toBe('- Coffee\n');
+  });
+
   it('embeds known images as data URIs', async () => {
     const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
     const out = await md(

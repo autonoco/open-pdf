@@ -1,4 +1,4 @@
-import { Image as ImageIcon, Palette, Presentation } from 'lucide-react';
+import { Image as ImageIcon, LayoutTemplate, Palette, Presentation } from 'lucide-react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDocTitles } from '@/lib/use-doc-titles';
@@ -6,7 +6,7 @@ import { useLocale } from '@/lib/use-locale';
 import { docIds } from '../../lib/docs';
 import type { Folder } from '../../lib/sdk';
 import { FolderIconChip } from '../sidebar/folder-item';
-import { ALL_DOCS_ID, ASSETS_ID, DRAFT_ID, THEMES_ID } from '../sidebar/sidebar';
+import { ALL_DOCS_ID, ASSETS_ID, DRAFT_ID, TEMPLATES_ID, THEMES_ID } from '../sidebar/sidebar';
 import { type CommandGroupSpec, CommandMenu, type CommandSpec } from './command-menu';
 
 export function HomeCommandMenu({
@@ -69,6 +69,13 @@ export function HomeCommandMenu({
       },
     ];
     if (import.meta.env.DEV) {
+      navigation.push({
+        id: `view-${TEMPLATES_ID}`,
+        label: t.home.templates,
+        icon: <LayoutTemplate />,
+        keywords: ['templates', 'new', 'create', 'invoice', 'report'],
+        run: () => onSelectView(TEMPLATES_ID),
+      });
       navigation.push({
         id: `view-${ASSETS_ID}`,
         label: t.home.assets,

@@ -40,6 +40,7 @@ export const zhCN: Locale = {
     draft: '草稿',
     duplicate: '复制',
     themes: '主题',
+    templates: '模板',
     assets: '素材',
     folders: '文件夹',
     docs: '幻灯片',
@@ -462,6 +463,16 @@ export const zhCN: Locale = {
     statusError: '保存失败：{msg}',
   },
 
+  templates: {
+    title: '模板',
+    empty: '暂无可用模板。',
+    devOnly: '模板仅在开发服务器中可用。',
+    use: '使用模板',
+    creating: '正在创建…',
+    created: '已创建 {name}',
+    failed: '无法创建文档：{error}',
+    useAria: '从 {name} 创建文档',
+  },
   themes: {
     title: '主题',
     noThemesTitle: '尚无主题',

@@ -45,19 +45,19 @@ export default function GettingStarted() {
           </tr>
         </thead>
         <tbody>
-          <tr tw="border-b border-slate-100">
-            <td tw="p-2">Flowing JSX content</td>
-            <td tw="p-2">Pagination with widow/orphan control</td>
+          <tr>
+            <td tw="border-b border-slate-100 p-2">Flowing JSX content</td>
+            <td tw="border-b border-slate-100 p-2">Pagination with widow/orphan control</td>
           </tr>
-          <tr tw="border-b border-slate-100">
-            <td tw="p-2">A real HTML table</td>
-            <td tw="p-2">Column tracks and repeating header rows</td>
+          <tr>
+            <td tw="border-b border-slate-100 p-2">A real HTML table</td>
+            <td tw="border-b border-slate-100 p-2">Column tracks and repeating header rows</td>
           </tr>
-          <tr tw="border-b border-slate-100">
-            <td tw="p-2">
+          <tr>
+            <td tw="border-b border-slate-100 p-2">
               <span tw="font-mono text-[10px]">pageOptions.footer</span>
             </td>
-            <td tw="p-2">A running band on every page</td>
+            <td tw="border-b border-slate-100 p-2">A running band on every page</td>
           </tr>
           <tr>
             <td tw="p-2">

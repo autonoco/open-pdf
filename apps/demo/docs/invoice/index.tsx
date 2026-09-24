@@ -154,17 +154,19 @@ export default function Invoice() {
         </thead>
         <tbody>
           {items.map((it) => (
-            <tr key={it.sku} tw="border-b border-slate-200" style={{ breakInside: 'avoid' }}>
-              <td tw="p-2 align-top">{it.sku}</td>
-              <td tw="p-2 align-top">
+            <tr key={it.sku} style={{ breakInside: 'avoid' }}>
+              <td tw="border-b border-slate-200 p-2 align-top">{it.sku}</td>
+              <td tw="border-b border-slate-200 p-2 align-top">
                 <div tw="flex flex-col">
                   <span>{it.name}</span>
                   <span tw="text-[9px] text-slate-500">{it.detail}</span>
                 </div>
               </td>
-              <td tw="p-2 text-right align-top">{String(it.qty)}</td>
-              <td tw="p-2 text-right align-top">{money(it.unit)}</td>
-              <td tw="p-2 text-right align-top">{money(it.qty * it.unit)}</td>
+              <td tw="border-b border-slate-200 p-2 text-right align-top">{String(it.qty)}</td>
+              <td tw="border-b border-slate-200 p-2 text-right align-top">{money(it.unit)}</td>
+              <td tw="border-b border-slate-200 p-2 text-right align-top">
+                {money(it.qty * it.unit)}
+              </td>
             </tr>
           ))}
         </tbody>

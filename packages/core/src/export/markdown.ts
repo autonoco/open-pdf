@@ -70,6 +70,8 @@ const escapeText = (s: string) => s.replace(/([\\`*_[\]<>|])/g, '\\$1');
 const escapeUrl = (s: string) =>
   s.replace(/[\s()|]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0')}`);
 const collapse = (s: string) => s.replace(/\s+/g, ' ');
+const NUMBER_MARKER = /^\d+[.)]\s*/;
+const BULLET_MARKER = /^(?:[•·▪◦–-]|\\\*)\s*/;
 
 class MarkdownWriter {
   constructor(private opts: MarkdownOptions) {}
@@ -138,9 +140,13 @@ class MarkdownWriter {
     }
     if (tag === 'table') return this.table(node);
     if (tag === 'ul' || tag === 'ol') {
-      const items = (node.children ?? []).map((li, i) => {
-        const text = this.line(childrenOf(li));
-        return `${tag === 'ol' ? `${i + 1}.` : '-'} ${text}`;
+      // Docs often draw their own marker inside the <li>; drop it so the
+      // Markdown marker isn't doubled, and keep numbering if it was numbered.
+      const raw = (node.children ?? []).map((li) => this.line(childrenOf(li)));
+      const numbered = tag === 'ol' || (raw.length > 0 && raw.every((t) => NUMBER_MARKER.test(t)));
+      const items = raw.map((text, i) => {
+        const body = text.replace(NUMBER_MARKER, '').replace(BULLET_MARKER, '');
+        return `${numbered ? `${i + 1}.` : '-'} ${body}`;
       });
       return items.length ? [items.join('\n')] : [];
     }

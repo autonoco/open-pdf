@@ -6,6 +6,7 @@ import { AssetsPage } from './routes/assets';
 import { Doc } from './routes/doc';
 import { Home } from './routes/home';
 import { HomeShell } from './routes/home-shell';
+import { TemplatesPage } from './routes/templates';
 import { ThemeDetailPage, ThemesGalleryPage } from './routes/themes';
 
 export function App() {
@@ -17,6 +18,7 @@ export function App() {
             <Route path="/" element={<Home />} />
             <Route path="/themes" element={<ThemesGalleryPage />} />
             <Route path="/themes/:themeId" element={<ThemeDetailPage />} />
+            <Route path="/templates" element={<TemplatesPage />} />
             <Route path="/assets" element={<AssetsPage />} />
           </Route>
         ) : (

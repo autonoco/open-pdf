@@ -7,6 +7,7 @@ import { registerEditRoutes } from './routes/edit.ts';
 import { registerFolderRoutes } from './routes/folders.ts';
 import { registerRestartRoutes } from './routes/restart.ts';
 import { registerSvglRoutes } from './routes/svgl.ts';
+import { registerTemplateRoutes } from './routes/templates.ts';
 import { registerUpdateRoutes } from './routes/update.ts';
 import { registerWatchers } from './routes/watchers.ts';
 
@@ -28,6 +29,7 @@ export function apiPlugin(opts: ApiPluginOptions): Plugin {
       registerAssetRoutes(server, ctx);
       registerSvglRoutes(server);
       registerFolderRoutes(server, ctx);
+      registerTemplateRoutes(server, ctx);
       registerUpdateRoutes(server, ctx);
       registerRestartRoutes(server);
     },
