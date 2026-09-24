@@ -205,14 +205,13 @@ export function Doc() {
       {showDocUi && (
         <header className="flex h-12 shrink-0 items-center gap-2 border-b bg-background px-3">
           {showDocBrowser && (
-            <Button
-              variant="ghost"
-              size="icon"
+            <Link
+              to="/"
               aria-label="Back to documents"
-              render={<Link to="/" />}
+              className={buttonVariants({ variant: 'ghost', size: 'icon' })}
             >
               <ChevronLeft className="size-4" />
-            </Button>
+            </Link>
           )}
           <h1 className="min-w-0 truncate text-sm font-medium">{title}</h1>
           <div className="ml-auto flex items-center gap-2">

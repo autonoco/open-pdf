@@ -18,7 +18,7 @@
     "prepack": "pnpm build"
   },
   "engines": {
-    "node": ">=18"
+    "node": "^20.19.0 || >=22.12.0"
   },
   "keywords": [
     "pdf",
@@ -50,9 +50,9 @@
     "prompts": "^2.4.2"
   },
   "devDependencies": {
-    "@types/node": "^22.19.17",
+    "@types/node": "^26.6.2",
     "@types/prompts": "^2.4.9",
-    "tsdown": "^0.9.9",
-    "typescript": "^5.9.3"
+    "tsdown": "^0.23.0",
+    "typescript": "^7.0.2"
   }
 }

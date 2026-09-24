@@ -13,6 +13,7 @@ export default defineConfig({
     cli: 'src/cli.ts',
   },
   format: 'esm',
+  fixedExtension: false,
   target: 'node18',
   platform: 'node',
   clean: true,

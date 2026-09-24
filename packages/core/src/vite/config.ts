@@ -85,8 +85,8 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
     },
     optimizeDeps: {
       entries: [path.join(APP_ROOT, 'main.tsx')],
-      // takumi-pdf's Vite entry top-level-awaits WASM init; esbuild pre-bundling
-      // targets es2020 and rejects TLA. Serve it as native ESM instead.
+      // takumi-pdf's Vite entry top-level-awaits WASM init, which dep
+      // pre-bundling rejects. Serve it as native ESM instead.
       exclude: ['takumi-pdf', '@takumi-rs/helpers'],
       include: [
         'react',
@@ -109,17 +109,14 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
       ],
       // The app source ships inside node_modules/@autono/open-pdf/src/app, so
       // Vite's dep scanner traverses it as if it were a third-party dep and
-      // tries to bundle our virtual imports with esbuild. Mark them external.
-      esbuildOptions: {
-        target: 'es2022',
+      // tries to bundle our virtual imports. Mark them external.
+      rolldownOptions: {
+        transform: { target: 'es2022' },
         plugins: [
           {
             name: 'open-pdf:virtual-externals',
-            setup(build) {
-              build.onResolve({ filter: /^virtual:open-pdf\// }, (args) => ({
-                path: args.path,
-                external: true,
-              }));
+            resolveId(id) {
+              return id.startsWith('virtual:open-pdf/') ? { id, external: true } : null;
             },
           },
         ],

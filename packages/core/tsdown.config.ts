@@ -8,6 +8,7 @@ export default defineConfig({
     'locale/index': 'src/locale/index.ts',
   },
   format: 'esm',
+  fixedExtension: false,
   target: 'node18',
   platform: 'node',
   clean: true,

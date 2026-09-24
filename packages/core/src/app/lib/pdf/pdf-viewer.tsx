@@ -11,6 +11,8 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
  * Parse PDF bytes into a pdf.js document. Passes a copy — pdf.js neuters the
  * input buffer, and the caller keeps `bytes` for download/export.
  */
+// pdf.js 6 dropped PDFDocumentProxy#destroy; a document is torn down
+// through the loading task that produced it.
 export function usePdfDocument(bytes: Uint8Array | null, _version: number) {
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +21,7 @@ export function usePdfDocument(bytes: Uint8Array | null, _version: number) {
     if (!bytes) {
       // Null bytes means a different document is loading; drop the stale one.
       setDoc((prev) => {
-        prev?.destroy();
+        void prev?.loadingTask.destroy();
         return null;
       });
       setError(null);
@@ -31,12 +33,12 @@ export function usePdfDocument(bytes: Uint8Array | null, _version: number) {
     task.promise
       .then((d) => {
         if (cancelled) {
-          d.destroy();
+          void d.loadingTask.destroy();
           return;
         }
         loaded = d;
         setDoc((prev) => {
-          prev?.destroy();
+          void prev?.loadingTask.destroy();
           return d;
         });
         setError(null);
@@ -97,7 +99,7 @@ export const PdfPageCanvas = memo(function PdfPageCanvas({
         });
       })
       .catch(() => {
-        // Page fetch after doc.destroy(); benign during doc swaps.
+        // Page fetch after the document was destroyed; benign during doc swaps.
       });
     return () => {
       cancelled = true;
