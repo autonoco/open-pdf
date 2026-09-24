@@ -81,16 +81,16 @@ describe('openPdfPlugin file watching', () => {
             }
           });
         });
+        const send = vi.spyOn(server.ws, 'send');
         await fs.mkdir(generatedRoot);
         await vi.waitFor(() => expect(server.watcher.getWatched()[generatedRoot]).toBeDefined());
         await fs.mkdir(docsRoot);
         await docsAppeared;
-        await vi.waitFor(() => expect(server.watcher.getWatched()[docsRoot]).toBeDefined());
-        const send = vi.spyOn(server.ws, 'send');
         await writeDoc(docsRoot, 'first-doc');
         await vi.waitFor(() => expect(send).toHaveBeenCalledWith({ type: 'full-reload' }), {
           timeout: 2000,
         });
+        await vi.waitFor(() => expect(server.watcher.getWatched()[docsRoot]).toBeDefined());
         expect((await server.transformRequest('virtual:open-pdf/docs'))?.code).toContain(
           'export const docIds = ["first-doc"];',
         );

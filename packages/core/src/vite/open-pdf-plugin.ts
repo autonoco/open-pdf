@@ -327,7 +327,10 @@ export function openPdfPlugin(opts: OpenPdfPluginOptions): Plugin {
         if (isDocEntry(p)) reload();
       });
       server.watcher.on('addDir', (p) => {
-        if (p === docsRoot && watchedRoot !== docsRoot) server.watcher.add(docsRoot);
+        if (p === docsRoot && watchedRoot !== docsRoot) {
+          server.watcher.add(docsRoot);
+          reload();
+        }
         if (path.dirname(p) === docsRoot && DOC_ID_RE.test(path.basename(p))) reload();
       });
       server.watcher.on('unlink', (p) => {
