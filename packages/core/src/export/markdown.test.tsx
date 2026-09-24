@@ -131,6 +131,29 @@ describe('markdownFromNodeTree', () => {
     expect(out).toBe('|  |\n| --- |\n| [C:\\\\dir\\|x](https://x.example/a%7Cb%20%28c%29) |\n');
   });
 
+  it('keeps a table row on one line when a cell has a hard break', async () => {
+    const out = await md(
+      <table>
+        <tbody>
+          <tr>
+            <td>
+              a<br />b
+            </td>
+            <td>c</td>
+          </tr>
+        </tbody>
+      </table>,
+    );
+    expect(out).toBe('|  |  |\n| --- | --- |\n| a<br>b | c |\n');
+  });
+
+  it('keeps inline data: images', async () => {
+    const out = await md(
+      <img src="data:image/png;base64,iVBORw==" alt="Dot" width={1} height={1} />,
+    );
+    expect(out).toBe('![Dot](data:image/png;base64,iVBORw==)\n');
+  });
+
   it('escapes Markdown syntax in text', async () => {
     expect(await md(<p>2 * 3 = [six]</p>)).toBe('2 \\* 3 = \\[six\\]\n');
   });

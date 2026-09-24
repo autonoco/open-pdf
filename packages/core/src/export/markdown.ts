@@ -84,6 +84,7 @@ class MarkdownWriter {
 
   private inlineNode(node: Node): string {
     if (node.type === 'text') {
+      if (node.tagName === 'br') return '  \n';
       const text = escapeText(collapse(node.text ?? ''));
       const href = node.tagName === 'a' ? node.attributes?.href : undefined;
       if (href) return `[${text}](${escapeUrl(href)})`;
@@ -114,7 +115,7 @@ class MarkdownWriter {
 
   private image(node: Node): string {
     const src = node.src ?? '';
-    if (!src || src.startsWith('data:') || src.trimStart().startsWith('<')) return '';
+    if (!src || src.trimStart().startsWith('<')) return '';
     const alt = node.attributes?.alt ?? '';
     const bytes = this.opts.images?.get(src);
     return `![${escapeText(alt)}](${bytes ? dataUri(bytes) : escapeUrl(src)})`;
@@ -214,11 +215,8 @@ class MarkdownWriter {
     const children = childrenOf(cell);
     const text = children.every(isInline)
       ? this.line(children)
-      : this.blocks(children)
-          .join('<br>')
-          .replace(/ {2}\n/g, '<br>')
-          .replace(/\n+/g, ' ');
-    return text;
+      : this.blocks(children).join('<br>');
+    return text.replace(/ {2}\n/g, '<br>').replace(/\n+/g, ' ');
   }
 }
 
