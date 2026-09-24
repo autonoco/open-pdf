@@ -69,6 +69,9 @@ export async function exportPdfs(opts: ExportOptions = {}): Promise<void> {
     mergeConfig(base, {
       server: { middlewareMode: true },
       appType: 'custom',
+      // Export only SSR-loads doc modules. Vite 6 otherwise kicks off a
+      // client dep scan that errors when the server closes mid-scan.
+      optimizeDeps: { noDiscovery: true },
       logLevel: 'error',
     }),
   );
@@ -88,7 +91,7 @@ export async function exportPdfs(opts: ExportOptions = {}): Promise<void> {
         throw new Error(`${docsDir}/${entry} must default-export a component`);
       }
       const element = createElement(mod.default as Parameters<typeof createElement>[0]);
-      const { node, stylesheets } = await fromJsx(element);
+      const { node, css } = await fromJsx(element);
       const imageEntries = await Promise.all(
         collectImageSrcs(node as TakumiNode).map(async (src) => ({
           src,
@@ -125,7 +128,7 @@ export async function exportPdfs(opts: ExportOptions = {}): Promise<void> {
           );
         }
         bytes = await render(node, {
-          stylesheets,
+          css,
           images: imageEntries,
           ...DEFAULT_PAGE,
           ...pageOptions,

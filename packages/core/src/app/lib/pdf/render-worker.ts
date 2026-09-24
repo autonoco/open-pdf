@@ -65,7 +65,7 @@ async function handleRender(req: RenderRequest) {
     throw new Error(`Doc module must default-export a component. Got: ${typeof mod.default}`);
   }
   const element = createElement(mod.default);
-  const { node, stylesheets } = await fromJsx(element);
+  const { node, css } = await fromJsx(element);
   const tags = req.inspect ? injectLocAnchors(node as TakumiNode) : {};
   const pageOptions = mod.pageOptions ?? {};
   // The engine does not fetch image URLs itself — hand it lazy loaders for
@@ -79,7 +79,7 @@ async function handleRender(req: RenderRequest) {
       }),
   }));
   const bytes: Uint8Array = await render(node, {
-    stylesheets,
+    css,
     images,
     ...DEFAULT_PAGE,
     ...pageOptions,
