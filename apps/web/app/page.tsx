@@ -31,8 +31,8 @@ const LINE_ITEMS = [
   },
   {
     loc: 'index.tsx:69',
-    name: 'Export: PDF, Word, Google Docs',
-    detail: 'Headless CLI export. DOCX is editable text, not page images.',
+    name: 'Export: PDF, Word, Google Docs, Markdown',
+    detail: 'From the viewer or the CLI. DOCX is editable text, not page images.',
     qty: '--format docx',
     amount: 'included',
   },

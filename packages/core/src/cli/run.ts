@@ -135,13 +135,19 @@ export async function run(argv: string[]): Promise<void> {
 
   program
     .command('export')
-    .description('Render docs to files — PDF (same bytes as the preview) or editable DOCX')
+    .description(
+      'Render docs to files: PDF (same bytes as the preview), editable DOCX, or Markdown',
+    )
     .argument('[docs...]', 'doc ids to export (default: all)')
     .option('--out-dir <dir>', 'output directory (defaults to `export`)')
-    .option('--format <format>', 'pdf or docx (defaults to pdf)')
+    .option('--format <format>', 'pdf, docx or md (defaults to pdf)')
     .action(async (docs: string[], flags: { outDir?: string; format?: string }) => {
       const { exportPdfs } = await import('./export.ts');
-      await exportPdfs({ docs, outDir: flags.outDir, format: flags.format as 'pdf' | 'docx' });
+      await exportPdfs({
+        docs,
+        outDir: flags.outDir,
+        format: flags.format as 'pdf' | 'docx' | 'md',
+      });
     });
 
   program

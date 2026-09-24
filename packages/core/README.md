@@ -27,7 +27,7 @@ npx open-pdf update
 - **Dev server + viewer** — renders actual PDF bytes (Takumi engine in a web worker) with sub-second re-renders on save. Doc list, page navigation, download.
 - **Inspect mode** — press `i`, click any element on the page to see its exact source line and leave a comment. Comments persist as `@pdf-comment` markers in the source, ready for a coding agent to apply.
 - **Vite plugin** — discovers `docs/<id>/index.tsx`, exposes docs via virtual modules, hot-reloads on add/remove.
-- **Export CLI** — the same bytes as the preview, headless. `--format docx` produces an editable Word file (real text, not page images).
+- **Export CLI** — the same bytes as the preview, headless. `--format docx` produces an editable Word file (real text, not page images); `--format md` produces Markdown. The viewer's Export menu offers all three.
 - **Agent skills** — file-based skills (`create-doc`, `apply-comments`, …) that sync into workspaces; no MCP server required.
 
 ## CLI
@@ -39,7 +39,7 @@ Once installed, the `open-pdf` bin is available in the workspace:
 | `open-pdf dev` | Start the dev server. Flags: `-p, --port <port>`, `--host [host]`, `--open`, `--no-skills-check`. |
 | `open-pdf build` | Build a static site. Flags: `--out-dir <dir>` (defaults to `dist`). |
 | `open-pdf preview` | Preview the production build. Flags: `-p, --port <port>`, `--host [host]`, `--open`. |
-| `open-pdf export [docs...]` | Render docs to files — PDF (same bytes as the preview) or editable DOCX. Flags: `--out-dir <dir>` (defaults to `export`), `--format <pdf\|docx>`. |
+| `open-pdf export [docs...]` | Render docs to files: PDF (same bytes as the preview), editable DOCX, or Markdown. Flags: `--out-dir <dir>` (defaults to `export`), `--format <pdf\|docx\|md>`. |
 | `open-pdf sync:skills` | Sync built-in agent skills into this workspace. Flags: `--dry-run`. |
 | `open-pdf update` | Update `@autono/open-pdf` to the latest version and sync skills. Flags: `--force`, `--no-skills`. |
 

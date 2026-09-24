@@ -28,7 +28,9 @@
     "dist",
     "env.d.ts",
     "src/app",
+    "src/export",
     "src/locale",
+    "src/shared",
     "skills",
     "README.md"
   ],

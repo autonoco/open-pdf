@@ -6,6 +6,7 @@ import fg from 'fast-glob';
 import { createElement } from 'react';
 import { render } from 'takumi-pdf';
 import { createServer, mergeConfig } from 'vite';
+import { EDITABLE_FORMATS, type EditableFormat, exportEditable } from '../export/editable.ts';
 import {
   collectImageSrcs,
   DEFAULT_PAGE,
@@ -21,7 +22,7 @@ export interface ExportOptions {
   /** Output directory, relative to the project root. Default: `export`. */
   outDir?: string;
   /** Output format. Default: pdf. */
-  format?: 'pdf' | 'docx';
+  format?: 'pdf' | EditableFormat;
 }
 
 const ENTRY_GLOB = '*/index.{tsx,jsx,ts,js}';
@@ -47,8 +48,8 @@ async function resolveUrlBytes(url: string, userCwd: string): Promise<Uint8Array
 export async function exportPdfs(opts: ExportOptions = {}): Promise<void> {
   const userCwd = process.cwd();
   const format = opts.format ?? 'pdf';
-  if (format !== 'pdf' && format !== 'docx') {
-    throw new Error(`Unknown format: ${format} (expected pdf or docx)`);
+  if (format !== 'pdf' && !EDITABLE_FORMATS.includes(format)) {
+    throw new Error(`Unknown format: ${format} (expected pdf, docx or md)`);
   }
   const config = await loadUserConfig(userCwd);
   const docsDir = config.docsDir ?? 'docs';
@@ -106,16 +107,12 @@ export async function exportPdfs(opts: ExportOptions = {}): Promise<void> {
       const pageOptions = { ...(mod.pageOptions ?? {}) };
 
       let bytes: Uint8Array;
-      if (format === 'docx') {
-        const { docxFromNodeTree } = await import('../export/docx.ts');
+      if (format !== 'pdf') {
         const meta = (mod as { meta?: { title?: string } }).meta;
-        const bandNode = async (band: unknown) =>
-          band ? ((await fromJsx(band as Parameters<typeof fromJsx>[0])).node as TakumiNode) : null;
-        const result = docxFromNodeTree(node as TakumiNode, {
+        const result = await exportEditable(format, {
+          node: node as TakumiNode,
           title: meta?.title ?? id,
           pageOptions,
-          headerNode: await bandNode(pageOptions.header),
-          footerNode: await bandNode(pageOptions.footer),
           images: new Map(imageEntries.map((e) => [e.src, e.data])),
         });
         for (const warning of result.warnings) {

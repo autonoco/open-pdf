@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { inspectToggle, openDoc, pdfPages } from './helpers.ts';
 
@@ -35,14 +36,26 @@ test.describe('doc viewer', () => {
     expect(await pdfPages(page).count()).toBeGreaterThanOrEqual(2);
   });
 
-  test('download hands back the doc as a pdf', async ({ page }) => {
-    await openDoc(page, 'alpha');
-    const button = page.getByRole('button', { name: 'Download PDF' });
-    await expect(button).toBeEnabled();
-    const download = page.waitForEvent('download');
-    await button.click();
-    expect((await download).suggestedFilename()).toBe('alpha.pdf');
-  });
+  for (const [item, ext] of [
+    ['PDF', 'pdf'],
+    ['Word (.docx)', 'docx'],
+    ['Markdown (.md)', 'md'],
+  ] as const) {
+    test(`export hands back the doc as ${ext}`, async ({ page }) => {
+      await openDoc(page, 'alpha');
+      const trigger = page.getByRole('button', { name: 'Export' });
+      await expect(trigger).toBeEnabled();
+      await trigger.click();
+      const download = page.waitForEvent('download');
+      await page.getByRole('menuitem', { name: item }).click();
+      const file = await download;
+      expect(file.suggestedFilename()).toBe(`alpha.${ext}`);
+      const bytes = await readFile((await file.path()) as string);
+      expect(bytes.length).toBeGreaterThan(0);
+      if (ext === 'md') expect(bytes.toString('utf8')).toContain('# Alpha page one');
+      else expect(bytes.subarray(0, 2).toString('latin1')).toBe(ext === 'pdf' ? '%P' : 'PK');
+    });
+  }
 
   test('the inspect toggle enables once geometry is ready', async ({ page }) => {
     await openDoc(page, 'alpha');
