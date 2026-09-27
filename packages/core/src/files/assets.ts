@@ -54,22 +54,11 @@ export function validateAssetName(v: unknown): string | null {
   return trimmed;
 }
 
-export function resolveAssetsDir(docsRoot: string, docId: string): string | null {
+function resolveAssetsDir(docsRoot: string, docId: string): string | null {
   if (!DOC_ID_RE.test(docId)) return null;
   const docDir = path.resolve(docsRoot, docId);
   if (!docDir.startsWith(docsRoot + path.sep)) return null;
-  const assetsDir = path.resolve(docDir, 'assets');
-  if (assetsDir !== path.join(docDir, 'assets')) return null;
-  return assetsDir;
-}
-
-function resolveAssetFile(docsRoot: string, docId: string, filename: string): string | null {
-  const assetsDir = resolveAssetsDir(docsRoot, docId);
-  if (!assetsDir) return null;
-  if (!validateAssetName(filename)) return null;
-  const file = path.resolve(assetsDir, filename);
-  if (!file.startsWith(assetsDir + path.sep)) return null;
-  return file;
+  return path.join(docDir, 'assets');
 }
 
 export function resolveScopedAssetsDir(
@@ -87,11 +76,10 @@ export function resolveScopedAssetFile(
   scope: string,
   filename: string,
 ): string | null {
-  if (scope === GLOBAL_SCOPE) {
-    if (!validateAssetName(filename)) return null;
-    const file = path.resolve(globalAssetsRoot, filename);
-    if (!file.startsWith(globalAssetsRoot + path.sep)) return null;
-    return file;
-  }
-  return resolveAssetFile(docsRoot, scope, filename);
+  const assetsDir = resolveScopedAssetsDir(docsRoot, globalAssetsRoot, scope);
+  if (!assetsDir) return null;
+  if (!validateAssetName(filename)) return null;
+  const file = path.resolve(assetsDir, filename);
+  if (!file.startsWith(assetsDir + path.sep)) return null;
+  return file;
 }

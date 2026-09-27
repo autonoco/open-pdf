@@ -5,6 +5,7 @@ import fg from 'fast-glob';
 import { loadConfigFromFile, normalizePath, type Plugin, type ViteDevServer } from 'vite';
 import type { OpenPdfConfig } from '../config.ts';
 import { DOC_ID_RE } from '../editing/doc-ops.ts';
+import { foldersManifestPath } from '../files/folders.ts';
 import { hasRecentWrite } from './recent-writes.ts';
 
 export type { OpenPdfConfig };
@@ -212,7 +213,7 @@ export function openPdfPlugin(opts: OpenPdfPluginOptions): Plugin {
   const { userCwd, config, coreVersion } = opts;
   const docsDir = config.docsDir ?? 'docs';
   const docsRoot = path.resolve(userCwd, docsDir);
-  const foldersManifestPath = path.join(docsRoot, '.folders.json');
+  const manifestPath = foldersManifestPath(docsRoot);
 
   let isDev = false;
   const docIdForEntry = (p: string): string | null => {
@@ -282,7 +283,7 @@ export function openPdfPlugin(opts: OpenPdfPluginOptions): Plugin {
         return `export default ${JSON.stringify(resolvedConfig)};\n`;
       }
       if (id === resolved(FOLDERS_VMOD)) {
-        const manifest = await readFoldersManifest(foldersManifestPath);
+        const manifest = await readFoldersManifest(manifestPath);
         return `export default ${JSON.stringify(manifest)};\n`;
       }
       return null;
@@ -350,13 +351,13 @@ export function openPdfPlugin(opts: OpenPdfPluginOptions): Plugin {
       // Explicitly watching the absent manifest can prevent chokidar from
       // discovering new doc directories on mounted filesystems.
       server.watcher.on('change', (p) => {
-        if (p === foldersManifestPath) invalidateFolders();
+        if (p === manifestPath) invalidateFolders();
       });
       server.watcher.on('add', (p) => {
-        if (p === foldersManifestPath) invalidateFolders();
+        if (p === manifestPath) invalidateFolders();
       });
       server.watcher.on('unlink', (p) => {
-        if (p === foldersManifestPath) invalidateFolders();
+        if (p === manifestPath) invalidateFolders();
       });
     },
   };
