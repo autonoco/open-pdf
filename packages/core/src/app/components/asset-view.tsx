@@ -1873,7 +1873,7 @@ function FontSearchDialog({
               {SKELETON_SLOTS.map((slot) => (
                 <div
                   key={slot}
-                  className="h-[4.5rem] animate-pulse rounded-lg border bg-muted/40"
+                  className="h-[4.5rem] animate-pulse rounded-lg border bg-muted/40 motion-reduce:animate-none"
                 />
               ))}
             </div>
@@ -1960,6 +1960,10 @@ function FontResultCard({
   onAdd: (file: File) => Promise<void> | void;
 }) {
   const [variant, setVariant] = useState(() => defaultVariant(item.variants));
+  // `pending` only covers the upload the parent runs; the download before it
+  // needs its own flag or a second click starts a second download.
+  const [downloading, setDownloading] = useState(false);
+  const busy = pending || downloading;
   const t = useLocale();
   const sample = previewText || item.family;
   const filenameBase = `${item.family.replace(/\s+/g, '')}-${variantLabel(variant).replace(/\s+/g, '')}`;
@@ -2024,18 +2028,25 @@ function FontResultCard({
         <Button
           size="sm"
           variant="outline"
-          disabled={pending}
+          disabled={busy}
           onClick={async () => {
+            setDownloading(true);
             try {
               const file = await fetchFontAsFile(item.family, variant, filenameBase);
               await onAdd(file);
             } catch (err) {
               toast.error(err instanceof Error ? err.message : t.asset.toastFontDownloadFailed);
+            } finally {
+              setDownloading(false);
             }
           }}
           className="h-6 px-2 text-[11px]"
         >
-          {pending ? <Loader2 className="size-3 animate-spin" /> : t.common.add}
+          {busy ? (
+            <Loader2 className="size-3 animate-spin motion-reduce:animate-none" />
+          ) : (
+            t.common.add
+          )}
         </Button>
       </div>
     </div>

@@ -11,6 +11,7 @@ const CATALOG_TTL = 60 * 60 * 1000;
 // and an MSIE UA gets EOT — a bare Mozilla token sidesteps both.
 const LEGACY_UA = 'Mozilla/5.0';
 const FONT_EXTS = new Set(['ttf', 'otf', 'woff', 'woff2']);
+const FETCH_TIMEOUT_MS = 15_000;
 const DEFAULT_LIMIT = 30;
 const MAX_LIMIT = 100;
 
@@ -39,7 +40,7 @@ async function loadCatalog(): Promise<CatalogEntry[]> {
   if (catalogCache && Date.now() - catalogCache.at < CATALOG_TTL) return catalogCache.entries;
   if (catalogInflight) return catalogInflight;
   catalogInflight = (async () => {
-    const res = await fetch(CATALOG_URL);
+    const res = await fetch(CATALOG_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     if (!res.ok) throw new Error(`metadata ${res.status}`);
     const text = await res.text();
     // Google guards the JSON with an XSSI prefix like ")]}'".
@@ -80,7 +81,10 @@ async function resolveFontFile(
   const weight = variant.replace(/i(talic)?$/, '') || '400';
   const style = italic ? `${weight}italic` : weight;
   const cssUrl = `https://fonts.googleapis.com/css?family=${cssFamilyParam(family)}:${style}`;
-  const css = await fetch(cssUrl, { headers: { 'user-agent': LEGACY_UA } });
+  const css = await fetch(cssUrl, {
+    headers: { 'user-agent': LEGACY_UA },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
   if (!css.ok) return null;
   const body = await css.text();
   const match = body.match(/url\((https:\/\/[^)]+)\)/);
@@ -123,7 +127,9 @@ export function registerGfontsRoutes(server: ViteDevServer): void {
         if (!family) return json(res, 400, { error: 'missing family' });
         const resolved = await resolveFontFile(family, variant);
         if (!resolved) return json(res, 404, { error: 'font not found' });
-        const upstream = await fetch(resolved.url);
+        const upstream = await fetch(resolved.url, {
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        });
         if (!upstream.ok) return json(res, 502, { error: `gstatic ${upstream.status}` });
         res.statusCode = 200;
         res.setHeader('content-type', upstream.headers.get('content-type') ?? 'font/ttf');
