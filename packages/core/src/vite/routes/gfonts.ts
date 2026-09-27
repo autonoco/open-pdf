@@ -11,6 +11,19 @@ const CATALOG_TTL = 60 * 60 * 1000;
 // and an MSIE UA gets EOT — a bare Mozilla token sidesteps both.
 const LEGACY_UA = 'Mozilla/5.0';
 const FONT_EXTS = new Set(['ttf', 'otf', 'woff', 'woff2']);
+const DEFAULT_LIMIT = 30;
+const MAX_LIMIT = 100;
+
+export function isGstaticHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  return host === 'gstatic.com' || host.endsWith('.gstatic.com');
+}
+
+export function clampLimit(raw: string | null): number {
+  const n = Math.floor(Number(raw));
+  if (!Number.isFinite(n) || n <= 0) return DEFAULT_LIMIT;
+  return Math.min(n, MAX_LIMIT);
+}
 
 type CatalogEntry = {
   family: string;
@@ -78,7 +91,7 @@ async function resolveFontFile(
   } catch {
     return null;
   }
-  if (!parsed.hostname.toLowerCase().endsWith('gstatic.com')) return null;
+  if (!isGstaticHost(parsed.hostname)) return null;
   const rawExt = parsed.pathname.split('.').pop()?.toLowerCase() ?? '';
   const ext = FONT_EXTS.has(rawExt) ? rawExt : 'ttf';
   return { url: parsed.toString(), ext };
@@ -93,7 +106,7 @@ export function registerGfontsRoutes(server: ViteDevServer): void {
     try {
       if (reqUrl.pathname === '/search') {
         const q = (reqUrl.searchParams.get('q') ?? '').trim().toLowerCase();
-        const limit = Number(reqUrl.searchParams.get('limit')) || 30;
+        const limit = clampLimit(reqUrl.searchParams.get('limit'));
         let entries = await loadCatalog();
         if (q) entries = entries.filter((e) => e.family.toLowerCase().includes(q));
         const items = entries
