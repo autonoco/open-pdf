@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { ViteDevServer } from 'vite';
 import { DOC_ID_RE } from '../../editing/doc-ops.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
+import { invalidateDocsRegistry } from '../open-pdf-plugin.ts';
 import { listTemplates, templateEntry } from '../templates-plugin.ts';
 import { type ApiContext, json, readBody } from './context.ts';
 
@@ -84,6 +85,7 @@ export function registerTemplateRoutes(server: ViteDevServer, ctx: ApiContext): 
           body.docId,
         );
         if (!created.ok) return json(res, created.status, { error: created.error });
+        invalidateDocsRegistry(server);
         return json(res, 200, { ok: true, docId: created.docId });
       }
       return next();
