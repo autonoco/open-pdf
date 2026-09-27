@@ -69,15 +69,40 @@ const LOCKFILES: ReadonlyArray<readonly [string, PackageManager]> = [
   ['package-lock.json', 'npm'],
 ];
 
+const PROJECT_ROOT_MARKERS = ['pnpm-workspace.yaml', '.git'];
+
+async function declaredPackageManager(dir: string): Promise<PackageManager | null> {
+  try {
+    const raw = await fs.readFile(path.join(dir, 'package.json'), 'utf8');
+    const declared = (JSON.parse(raw) as { packageManager?: unknown }).packageManager;
+    if (typeof declared !== 'string') return null;
+    const name = declared.split('@')[0];
+    return name === 'npm' || name === 'pnpm' || name === 'yarn' || name === 'bun' ? name : null;
+  } catch {
+    return null;
+  }
+}
+
+async function isProjectRoot(dir: string): Promise<boolean> {
+  for (const marker of PROJECT_ROOT_MARKERS) {
+    if (await fileExists(path.join(dir, marker))) return true;
+  }
+  return false;
+}
+
 export async function detectPackageManager(cwd: string): Promise<PackageManager> {
   // Workspace members have no lockfile of their own; it lives at the root.
+  // The walk stops at the project root so a lockfile in an unrelated
+  // ancestor directory never picks the manager.
   let dir = cwd;
   while (true) {
+    const declared = await declaredPackageManager(dir);
+    if (declared) return declared;
     for (const [lockfile, pm] of LOCKFILES) {
       if (await fileExists(path.join(dir, lockfile))) return pm;
     }
     const parent = path.dirname(dir);
-    if (parent === dir) break;
+    if (parent === dir || (await isProjectRoot(dir))) break;
     dir = parent;
   }
 
