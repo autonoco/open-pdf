@@ -5,6 +5,7 @@ import { type ApiPluginOptions, makeContext } from './routes/context.ts';
 import { registerDocRoutes } from './routes/docs.ts';
 import { registerEditRoutes } from './routes/edit.ts';
 import { registerFolderRoutes } from './routes/folders.ts';
+import { registerGfontsRoutes } from './routes/gfonts.ts';
 import { registerRestartRoutes } from './routes/restart.ts';
 import { registerSvglRoutes } from './routes/svgl.ts';
 import { registerTemplateRoutes } from './routes/templates.ts';
@@ -28,6 +29,7 @@ export function apiPlugin(opts: ApiPluginOptions): Plugin {
       registerDocRoutes(server, ctx);
       registerAssetRoutes(server, ctx);
       registerSvglRoutes(server);
+      registerGfontsRoutes(server);
       registerFolderRoutes(server, ctx);
       registerTemplateRoutes(server, ctx);
       registerUpdateRoutes(server, ctx);
