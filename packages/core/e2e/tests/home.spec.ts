@@ -53,16 +53,6 @@ test.describe('home doc browser', () => {
     await expect(page.locator('html')).toHaveClass(/dark/);
   });
 
-  test('language toggle switches locale and persists across reloads', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Change language' }).click();
-    await page.getByRole('menuitem', { name: '繁體中文' }).click();
-    await expect(page.getByText('投影片').first()).toBeVisible();
-
-    await page.reload();
-    await expect(page.getByText('投影片').first()).toBeVisible();
-  });
-
   test('sidebar toolbar buttons label themselves on hover', async ({ page }) => {
     await page.goto('/');
     const tooltip = page.locator('[data-slot="tooltip-content"]').last();
@@ -70,7 +60,6 @@ test.describe('home doc browser', () => {
     // tooltip waits for.
     for (const [name, label] of [
       ['Open command menu', 'Search'],
-      ['Change language', 'Language'],
       ['Toggle theme', 'Theme'],
     ]) {
       const box = await page.getByRole('button', { name }).boundingBox();

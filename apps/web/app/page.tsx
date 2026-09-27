@@ -70,7 +70,7 @@ function Toolbar() {
   return (
     <div className="mx-auto flex w-full max-w-[1180px] items-center gap-3 px-5 py-3 text-[13px]">
       {/* biome-ignore lint: static marketing img */}
-      <img src="/mark.svg" alt="" width={22} height={22} />
+      <img src="/autono.svg" alt="" width={22} height={22} style={{ borderRadius: 4 }} />
       <span className="font-medium text-[#e8e5dd]">open-pdf</span>
       <span className="hidden text-[#66625a] sm:inline">/</span>
       <span className="hidden text-[#8a867d] sm:inline">the-pitch.pdf</span>

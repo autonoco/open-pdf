@@ -8,7 +8,7 @@ test.describe('doc viewer', () => {
     await expect(page.getByRole('heading', { name: 'Alpha Doc' })).toBeVisible();
     await expect(pdfPages(page)).toHaveCount(3);
     await expect(page.getByText(/^3 pages · \d+ms$/)).toBeVisible();
-    await expect(page).toHaveTitle('Alpha Doc — open-pdf');
+    await expect(page).toHaveTitle('Alpha Doc — Autono');
   });
 
   test('multi-page docs get a thumbnail rail, single-page docs do not', async ({ page }) => {
@@ -71,7 +71,7 @@ test.describe('doc viewer', () => {
 
   test('back link returns to the doc browser', async ({ page }) => {
     await openDoc(page, 'alpha');
-    await page.getByRole('link', { name: 'Back to documents' }).click();
+    await page.getByRole('button', { name: 'Back to documents' }).click();
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator('li h3')).toHaveCount(4);
   });

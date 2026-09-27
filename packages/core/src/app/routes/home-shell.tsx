@@ -2,7 +2,7 @@ import { Menu } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { LanguageToggle } from '@/components/language-toggle';
+import logo from '@/assets/autono.svg';
 import { ThemeToggle } from '@/components/theme-toggle';
 import {
   DropdownMenu,
@@ -191,10 +191,20 @@ export function HomeShell() {
 
       <div className="relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-canvas">
         <div className="flex items-center justify-between border-b border-hairline bg-sidebar px-4 py-3 md:hidden">
-          <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
+          <div className="flex min-w-0 items-center gap-2.5">
+            <img
+              src={logo}
+              alt=""
+              aria-hidden
+              draggable={false}
+              className="size-6 shrink-0 select-none rounded-[6px] ring-1 ring-foreground/10"
+            />
+            <h1 className="truncate font-heading text-lg font-bold tracking-tight">
+              {t.home.appTitle}
+            </h1>
+          </div>
           <div className="-mr-1.5 flex items-center gap-0.5">
             <CommandMenuTrigger onClick={openCommandMenu} />
-            <LanguageToggle />
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger

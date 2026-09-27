@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   title,
   description,
   metadataBase: new URL('https://openpdf.sh'),
-  icons: { icon: '/favicon.svg' },
+  icons: { icon: '/autono.svg' },
   openGraph: {
     title,
     description,
