@@ -16,6 +16,7 @@ import {
 } from '../../editing/doc-ops.ts';
 import { readManifest, writeManifest } from '../../files/folders.ts';
 import { validateMutationRequest } from '../../http/request-guard.ts';
+import { invalidateDocsRegistry } from '../open-pdf-plugin.ts';
 import { type ApiContext, json, readBody } from './context.ts';
 
 // PUT    /__docs/:id/reorder            reorder pages { order: number[] }
@@ -155,6 +156,7 @@ export function registerDocRoutes(server: ViteDevServer, ctx: ApiContext): void 
           manifest.assignments[duplicated.docId] = folderId;
           await writeManifest(ctx.manifestPath, manifest);
         }
+        invalidateDocsRegistry(server);
         return json(res, 200, { ok: true, docId: duplicated.docId });
       }
 
@@ -209,6 +211,7 @@ export function registerDocRoutes(server: ViteDevServer, ctx: ApiContext): void 
         const manifest = await readManifest(ctx.manifestPath);
         delete manifest.assignments[docId];
         await writeManifest(ctx.manifestPath, manifest);
+        invalidateDocsRegistry(server);
         return json(res, 200, { ok: true });
       }
 

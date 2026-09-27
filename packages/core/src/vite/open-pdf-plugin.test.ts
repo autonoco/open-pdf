@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { createServer } from 'vite';
@@ -174,6 +175,53 @@ describe('openPdfPlugin file watching', () => {
           'export const docIds = ["new-doc"];',
         );
       } finally {
+        await server.close();
+      }
+    });
+  });
+
+  it('serves a doc created through the API on the next request without a reload', async () => {
+    await withDocsRoot(async (root) => {
+      const docsRoot = path.join(root, 'docs');
+      const templatesRoot = path.join(root, 'templates');
+      await fs.mkdir(docsRoot);
+      await writeDoc(templatesRoot, 'invoice');
+      const server = await createServer({
+        root,
+        configFile: false,
+        plugins: [
+          openPdfPlugin({ userCwd: root, config: {}, coreVersion: 'test' }),
+          apiPlugin({ userCwd: root, templatesRoot, coreVersion: 'test' }),
+        ],
+        server: { middlewareMode: true },
+      });
+      const httpServer = http.createServer(server.middlewares);
+      await new Promise<void>((resolve) => httpServer.listen(0, '127.0.0.1', resolve));
+      const address = httpServer.address();
+      if (!address || typeof address !== 'object') throw new Error('no address');
+      try {
+        await vi.waitFor(() => expect(server.watcher.getWatched()[docsRoot]).toBeDefined());
+        expect((await server.transformRequest('virtual:open-pdf/docs'))?.code).toContain(
+          'export const docIds = [];',
+        );
+        const send = vi.spyOn(server.ws, 'send');
+
+        const res = await fetch(`http://127.0.0.1:${address.port}/__templates/invoice/use`, {
+          method: 'POST',
+        });
+        expect(res.status).toBe(200);
+        expect(await res.json()).toEqual({ ok: true, docId: 'invoice' });
+
+        // The navigation that follows the response sees the new doc at once.
+        expect((await server.transformRequest('virtual:open-pdf/docs'))?.code).toContain(
+          'export const docIds = ["invoice"];',
+        );
+        // The watcher notices the new files afterwards, but the served
+        // registry already matches disk, so no reload is broadcast.
+        await new Promise((resolve) => setTimeout(resolve, 600));
+        expect(send).not.toHaveBeenCalledWith({ type: 'full-reload' });
+      } finally {
+        await new Promise<void>((resolve) => httpServer.close(() => resolve()));
         await server.close();
       }
     });

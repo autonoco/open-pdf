@@ -50,6 +50,14 @@ function resolved(id: string): string {
   return `\0${id}`;
 }
 
+// Routes that create or remove a doc call this before responding, so a
+// navigation that follows the response loads a registry that already knows
+// the doc instead of waiting for the file watcher to notice.
+export function invalidateDocsRegistry(server: ViteDevServer): void {
+  const mod = server.moduleGraph.getModuleById(resolved(DOCS_VMOD));
+  if (mod) server.moduleGraph.invalidateModule(mod);
+}
+
 async function findDocs(userCwd: string, docsDir: string): Promise<string[]> {
   const abs = path.resolve(userCwd, docsDir);
   if (!existsSync(abs)) return [];
@@ -214,6 +222,7 @@ export function openPdfPlugin(opts: OpenPdfPluginOptions): Plugin {
   const docsDir = config.docsDir ?? 'docs';
   const docsRoot = path.resolve(userCwd, docsDir);
   const manifestPath = foldersManifestPath(docsRoot);
+  let servedDocsCode: string | null = null;
 
   let isDev = false;
   const docIdForEntry = (p: string): string | null => {
@@ -261,6 +270,7 @@ export function openPdfPlugin(opts: OpenPdfPluginOptions): Plugin {
       if (id === resolved(DOCS_VMOD)) {
         const files = await findDocs(userCwd, docsDir);
         const { code, ignored } = await generateDocsModule(files, docsRoot, isDev);
+        servedDocsCode = code;
         for (const docId of ignored) {
           if (warnedInvalidDocIds.has(docId)) continue;
           warnedInvalidDocIds.add(docId);
@@ -304,12 +314,23 @@ export function openPdfPlugin(opts: OpenPdfPluginOptions): Plugin {
       const isDocEntry = (p: string) => docIdForEntry(p) !== null;
 
       let reloadTimer: ReturnType<typeof setTimeout> | null = null;
+      const currentDocsCode = async () => {
+        try {
+          const files = await findDocs(userCwd, docsDir);
+          return (await generateDocsModule(files, docsRoot, isDev)).code;
+        } catch {
+          return null;
+        }
+      };
       const reload = () => {
         if (reloadTimer) clearTimeout(reloadTimer);
-        reloadTimer = setTimeout(() => {
+        reloadTimer = setTimeout(async () => {
           reloadTimer = null;
-          const mod = server.moduleGraph.getModuleById(resolved(DOCS_VMOD));
-          if (mod) server.moduleGraph.invalidateModule(mod);
+          invalidateDocsRegistry(server);
+          // A doc created through the API was invalidated on the spot, and
+          // the client has usually loaded the fresh registry by the time the
+          // watcher fires; reloading again would only flash the page.
+          if (servedDocsCode !== null && (await currentDocsCode()) === servedDocsCode) return;
           server.ws.send({ type: 'full-reload' });
         }, 150);
       };
