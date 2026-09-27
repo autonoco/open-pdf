@@ -1964,7 +1964,7 @@ function FontResultCard({
   const sample = previewText || item.family;
   const filenameBase = `${item.family.replace(/\s+/g, '')}-${variantLabel(variant).replace(/\s+/g, '')}`;
   const italic = variant.endsWith('i');
-  const weight = (italic ? variant.slice(0, -1) : variant) || '400';
+  const weight = variantWeight(variant);
   const isDefaultVariant = variant === defaultVariant(item.variants);
 
   // The dialog-level stylesheet only carries each family's default face, so
@@ -1995,7 +1995,7 @@ function FontResultCard({
           className="mt-1 truncate text-2xl leading-tight"
           style={{
             fontFamily: `'${item.family}', sans-serif`,
-            fontWeight: Number(weight) || 400,
+            fontWeight: weight,
             fontStyle: italic ? 'italic' : 'normal',
           }}
           title={sample}
@@ -2008,7 +2008,10 @@ function FontResultCard({
           <select
             aria-label={t.asset.fontWeightLabel}
             value={variant}
-            onChange={(e) => setVariant(e.target.value)}
+            onChange={(e) => {
+              const next = item.variants.find((v) => v === e.target.value);
+              if (next) setVariant(next);
+            }}
             className="h-6 w-30 rounded-md border bg-background px-1.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
           >
             {item.variants.map((v) => (
@@ -2065,7 +2068,14 @@ function defaultVariant(variants: string[]): string {
   return firstUpright ?? variants[0] ?? '400';
 }
 
-function googleFontsVariantCssUrl(family: string, weight: string, italic: boolean): string {
+// Catalog variants are '100'..'900' with an optional 'i' suffix; anything
+// else collapses to 400 so only a known weight ever reaches a URL.
+function variantWeight(variant: string): number {
+  const parsed = Number.parseInt(variant.endsWith('i') ? variant.slice(0, -1) : variant, 10);
+  return Number.isInteger(parsed) && parsed >= 100 && parsed <= 900 ? parsed : 400;
+}
+
+function googleFontsVariantCssUrl(family: string, weight: number, italic: boolean): string {
   const name = encodeURIComponent(family).replace(/%20/g, '+');
   const axis = italic ? `ital,wght@1,${weight}` : `wght@${weight}`;
   return `https://fonts.googleapis.com/css2?family=${name}:${axis}&display=swap`;
