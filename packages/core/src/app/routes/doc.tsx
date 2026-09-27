@@ -12,7 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
@@ -21,6 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { readLastHomeLocation } from '@/lib/last-home-location';
 import { cn } from '@/lib/utils';
 import { type EditableFormat, FORMAT_MIME } from '../../export/editable';
 import { buildHitMap, extractBoxText, type LocBox, type PageHitMap } from '../lib/pdf/hit-map';
@@ -38,6 +39,17 @@ type Selection = { box: LocBox; pageIndex: number; text: string };
 
 export function Doc() {
   const { docId = '' } = useParams();
+  const navigate = useNavigate();
+  // react-router records its entry index in history.state; going back is only
+  // safe when we actually pushed an entry, otherwise land on the last home view.
+  const goBack = useCallback(() => {
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (idx > 0) {
+      navigate(-1);
+    } else {
+      navigate(readLastHomeLocation(), { replace: true });
+    }
+  }, [navigate]);
   const { doc: docModule } = useDocModule(docId);
   const { bytes, tags, rendering, error, durationMs, version } = useDocPdf(docId);
   const { doc: pdfDoc, error: parseError } = usePdfDocument(bytes, version);
@@ -45,6 +57,9 @@ export function Doc() {
   const title = docModule?.meta?.title ?? docId;
   useEffect(() => {
     document.title = `${title} — open-pdf`;
+    return () => {
+      document.title = 'open-pdf';
+    };
   }, [title]);
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -205,13 +220,14 @@ export function Doc() {
       {showDocUi && (
         <header className="flex h-12 shrink-0 items-center gap-2 border-b bg-background px-3">
           {showDocBrowser && (
-            <Link
-              to="/"
+            <button
+              type="button"
+              onClick={goBack}
               aria-label="Back to documents"
               className={buttonVariants({ variant: 'ghost', size: 'icon' })}
             >
               <ChevronLeft className="size-4" />
-            </Link>
+            </button>
           )}
           <h1 className="min-w-0 truncate text-sm font-medium">{title}</h1>
           <div className="ml-auto flex items-center gap-2">
