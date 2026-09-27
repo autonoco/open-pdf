@@ -58,10 +58,8 @@ test.describe('home doc browser', () => {
     const tooltip = page.locator('[data-slot="tooltip-content"]').last();
     // A single move lands without the pointer ever resting, which is what the
     // tooltip waits for.
-    for (const [name, label] of [
-      ['Open command menu', 'Search'],
-      ['Toggle theme', 'Theme'],
-    ]) {
+    // The command-menu trigger is a labelled search field, no tooltip needed.
+    for (const [name, label] of [['Toggle theme', 'Theme']]) {
       const box = await page.getByRole('button', { name }).boundingBox();
       if (!box) throw new Error(`${name} has no bounding box`);
       await page.mouse.move(box.x + box.width / 2 - 2, box.y + box.height / 2 - 2);
