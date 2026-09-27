@@ -2,6 +2,7 @@ import type { ServerResponse } from 'node:http';
 import path from 'node:path';
 import type { Connect } from 'vite';
 import { DOC_ID_RE } from '../../editing/doc-ops.ts';
+import { foldersManifestPath } from '../../files/folders.ts';
 
 export type ApiContext = {
   userCwd: string;
@@ -27,7 +28,7 @@ export function makeContext(opts: ApiPluginOptions): ApiContext {
   const assetsDir = opts.assetsDir ?? 'assets';
   const docsRoot = path.resolve(userCwd, docsDir);
   const globalAssetsRoot = path.resolve(userCwd, assetsDir);
-  const manifestPath = path.join(docsRoot, '.folders.json');
+  const manifestPath = foldersManifestPath(docsRoot);
   return {
     userCwd,
     docsDir,
