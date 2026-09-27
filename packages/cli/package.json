@@ -1,7 +1,7 @@
 {
   "name": "@autono/create-open-pdf",
   "version": "0.1.0",
-  "description": "Scaffold an open-pdf workspace — agent skills preconfigured, live real-PDF preview out of the box.",
+  "description": "Scaffold an open-pdf workspace \u2014 agent skills preconfigured, live real-PDF preview out of the box.",
   "type": "module",
   "bin": {
     "create-open-pdf": "dist/cli.js"
@@ -45,13 +45,12 @@
     "access": "public"
   },
   "dependencies": {
+    "@clack/prompts": "^1.7.0",
     "chalk": "^6.0.0",
-    "commander": "^15.0.0",
-    "prompts": "^2.4.2"
+    "commander": "^15.0.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",
-    "@types/prompts": "^2.4.9",
     "tsdown": "^0.23.0",
     "typescript": "^7.0.2"
   }
