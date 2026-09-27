@@ -1,3 +1,7 @@
+<img width="1200" height="630" alt="Autono" src="packages/core/src/app/assets/autono-social.png" />
+
+<br />
+
 # open-pdf
 
 **The PDF framework built for agents.**

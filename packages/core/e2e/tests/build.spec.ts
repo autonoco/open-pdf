@@ -50,7 +50,7 @@ test.describe('static build and preview', () => {
 
     const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
     expect(html).toContain('<div id="root"></div>');
-    expect(html).toContain('<title>open-pdf</title>');
+    expect(html).toContain('<title>Autono</title>');
 
     // Each doc is lazily imported, so it code-splits into at least one chunk
     // per doc plus the entry chunk. Chunk names depend on the bundler, so

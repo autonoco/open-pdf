@@ -36,7 +36,7 @@ export const en: Locale = {
   },
 
   home: {
-    appTitle: 'open-pdf',
+    appTitle: 'Autono',
     draft: 'Draft',
     duplicate: 'Duplicate',
     themes: 'Themes',
@@ -47,7 +47,7 @@ export const en: Locale = {
     menu: 'Menu',
     newFolder: 'New folder',
     folderName: 'Folder name',
-    updateAvailable: 'open-pdf {version} is available',
+    updateAvailable: 'Autono {version} is available',
     updatePackage: 'Update',
     updatingPackage: 'Updating',
     updatePackageDone: 'Updated. Restart the dev server to use the new version.',
@@ -457,11 +457,6 @@ export const en: Locale = {
     light: 'Light',
     dark: 'Dark',
     system: 'System',
-  },
-
-  languageToggle: {
-    toggleAria: 'Change language',
-    title: 'Language',
   },
 
   imagePlaceholder: {

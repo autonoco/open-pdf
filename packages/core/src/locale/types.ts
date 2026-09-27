@@ -490,11 +490,6 @@ export type Locale = {
     system: string;
   };
 
-  languageToggle: {
-    toggleAria: string;
-    title: string;
-  };
-
   imagePlaceholder: {
     dropOverlay: string;
     uploading: string;

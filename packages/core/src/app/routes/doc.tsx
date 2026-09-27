@@ -56,9 +56,9 @@ export function Doc() {
 
   const title = docModule?.meta?.title ?? docId;
   useEffect(() => {
-    document.title = `${title} — open-pdf`;
+    document.title = `${title} — Autono`;
     return () => {
-      document.title = 'open-pdf';
+      document.title = 'Autono';
     };
   }, [title]);
 
