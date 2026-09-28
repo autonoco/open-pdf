@@ -41,7 +41,7 @@ Moves `@autono/open-pdf` to the latest version and syncs the agent skills it shi
 
 1. **Describe.** Tell your agent what the document is. It runs `/create-doc` and writes the React.
 2. **Preview.** The dev server renders actual PDF bytes on every save, in well under a second.
-3. **Annotate.** Press `i`, click anything, leave a note. It lands in the source as an `@pdf-comment` marker.
+3. **Annotate.** Press `i`, click anything. Fix the copy or the emphasis right there in the rich text editor, or leave a note; edits go straight into the JSX and notes land as `@pdf-comment` markers.
 4. **Ship.** Your agent runs `/apply-comments`. `open-pdf export` writes the PDF, or `--format docx` / `--format md` for editable Word or Markdown. The viewer's Export menu does the same.
 
 ## What you get
@@ -49,6 +49,7 @@ Moves `@autono/open-pdf` to the latest version and syncs the agent skills it shi
 - **A preview that is the PDF.** [Takumi](https://takumi.kane.tw) renders real PDF bytes in a web worker. No HTML approximation.
 - **Click-to-source inspector.** Every element knows its exact source line. Comments persist in the source, ready for an agent.
 - **Real document features.** HTML tables with repeating headers, page-break control, running header and footer bands, page numbers, custom fonts and images.
+- **Edit copy in place.** Select any text on the rendered PDF and change it, or bold, italicise, underline, and colour a range, in a small rich text editor (editorcn on Tiptap). Every change is written into the JSX source and the PDF re-renders.
 - **Export to PDF, Word, Google Docs, Markdown.** DOCX output is real editable text, not page images.
 - **Agent-native.** File-based skills (`create-doc`, `apply-comments`, `create-theme`, ...) sync into the workspace. No MCP server. Works with Claude Code, Cursor, Codex, Gemini CLI, OpenCode, Windsurf, Zed, and anything else that reads `AGENTS.md`.
 - **Nothing to configure.** Vite, React, and TypeScript live inside the runtime. A workspace is `docs/`, an optional `open-pdf.config.ts`, and your agent skills.

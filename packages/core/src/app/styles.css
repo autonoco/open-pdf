@@ -439,3 +439,30 @@
     background-clip: content-box;
   }
 }
+
+/* The inspector's rich text field: a compact editorcn editor sized for
+   the side panel, matching the input controls around it. */
+.inspector-rich-text .rte-root {
+  border-color: var(--border);
+  background-color: var(--background);
+  font-size: 12px;
+}
+.inspector-rich-text .rte-root[data-variant="compact"] .rte-content .ProseMirror {
+  min-height: 3.5rem;
+  padding: 0.5rem 0.625rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.inspector-rich-text .rte-content .ProseMirror p {
+  margin: 0;
+  line-height: 1.5;
+}
+.inspector-rich-text .rte-toolbar--compact {
+  background-color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+.inspector-rich-text button.rte-control-button {
+  height: 1.625rem;
+  min-width: 1.625rem;
+}

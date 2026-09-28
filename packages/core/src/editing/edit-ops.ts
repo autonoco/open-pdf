@@ -1,9 +1,12 @@
 import * as t from '@babel/types';
 import { parseSource, walkAll, walkJsx } from './babel-walk.ts';
 
+export type RichTextRun = { text: string; style?: Record<string, string> };
+
 export type EditOp =
   | { kind: 'set-style'; key: string; value: string | null; prevText?: string }
   | { kind: 'set-text'; value: string; prevText?: string }
+  | { kind: 'set-rich-text'; runs: RichTextRun[]; prevText?: string }
   | {
       kind: 'set-text-range-style';
       start: number;
@@ -196,7 +199,10 @@ function findUniqueElementByText(ast: t.Node, prevText: string): t.JSXElement | 
 function fallbackTextForOps(ops: EditOp[]): string | null {
   for (const op of ops) {
     if (
-      (op.kind === 'set-style' || op.kind === 'set-text' || op.kind === 'set-text-range-style') &&
+      (op.kind === 'set-style' ||
+        op.kind === 'set-text' ||
+        op.kind === 'set-rich-text' ||
+        op.kind === 'set-text-range-style') &&
       op.prevText !== undefined
     ) {
       return op.prevText;
@@ -784,6 +790,201 @@ function buildTextRangeStyleSplices(
   return splices.length > 0 ? splices : null;
 }
 
+const RICH_TEXT_STYLE_KEYS = new Set([
+  'fontWeight',
+  'fontStyle',
+  'textDecoration',
+  'color',
+  'backgroundColor',
+]);
+
+function isJsxCommentChild(node: t.Node): node is t.JSXExpressionContainer {
+  return t.isJSXExpressionContainer(node) && t.isJSXEmptyExpression(node.expression);
+}
+
+// Runs are emitted on one line straight after the opening tag, where JSX
+// keeps every space, so only `{}<>` need the expression-container escape.
+function formatRunSegment(segment: string): string {
+  if (segment === '') return '';
+  return /[{}<>]/.test(segment) ? `{${jsString(segment)}}` : segment;
+}
+
+function formatRichTextRun(run: RichTextRun): string {
+  const text = run.text.split('\n').map(formatRunSegment).join('<br />');
+  const entries = Object.entries(run.style ?? {}).filter(([, value]) => value !== '');
+  if (entries.length === 0 || text === '') return text;
+  const style = entries.map(([key, value]) => `${key}: ${jsString(value)}`).join(', ');
+  return `<span style={{ ${style} }}>${text}</span>`;
+}
+
+// The whole text content of the element as styled runs. Rewrites every
+// child, so existing inline wrappers are replaced by `<span style>` runs;
+// comment markers among the direct children are kept at the front.
+function buildRichTextSplice(
+  source: string,
+  element: t.JSXElement,
+  runs: RichTextRun[],
+  prevText?: string,
+): Splice | { error: string } {
+  for (const run of runs) {
+    for (const key of Object.keys(run.style ?? {})) {
+      if (!RICH_TEXT_STYLE_KEYS.has(key)) return { error: `unsupported rich text style: ${key}` };
+    }
+  }
+  const parts: TextRangePart[] = [];
+  collectTextRangeParts(element, parts);
+  if (parts.length === 0) return { error: 'element has no editable text' };
+  const current = textRangeContent(parts);
+  if (prevText !== undefined && !textMatchesExpected(current, prevText)) {
+    return { error: 'no text candidate matches the current value' };
+  }
+  const comments = element.children
+    .filter(isJsxCommentChild)
+    .map((child) => source.slice(child.start ?? 0, child.end ?? 0))
+    .join('');
+  const body = leadingSpacesToPreviousRun(runs).map(formatRichTextRun).join('');
+  return wrapSplice(element, `${comments}${body}`);
+}
+
+// The renderer drops the leading spaces of a text node that follows an
+// inline element, so `<span>for</span> Harborline` loses its gap. Spaces
+// that open a run stay attached to the run before them instead.
+function leadingSpacesToPreviousRun(runs: RichTextRun[]): RichTextRun[] {
+  const out: RichTextRun[] = runs.map((run) => ({ ...run }));
+  for (let i = 1; i < out.length; i++) {
+    const match = out[i].text.match(/^[ \t]+/);
+    if (!match || out[i - 1].text.endsWith('\n')) continue;
+    out[i - 1].text += match[0];
+    out[i].text = out[i].text.slice(match[0].length);
+  }
+  return out.filter((run) => run.text !== '');
+}
+
+const TW_RICH_CLASSES: Record<string, [string, string]> = {
+  'font-semibold': ['fontWeight', '600'],
+  'font-bold': ['fontWeight', '700'],
+  'font-extrabold': ['fontWeight', '800'],
+  'font-black': ['fontWeight', '900'],
+  italic: ['fontStyle', 'italic'],
+  underline: ['textDecoration', 'underline'],
+  'line-through': ['textDecoration', 'line-through'],
+};
+
+function richStyleOfElement(element: t.JSXElement): Record<string, string> {
+  const style: Record<string, string> = {};
+  const tw = readJsxStringAttr(element.openingElement, 'tw');
+  for (const cls of (tw ?? '').split(/\s+/)) {
+    const mapped = TW_RICH_CLASSES[cls];
+    if (mapped) {
+      style[mapped[0]] =
+        mapped[0] === 'textDecoration' && style.textDecoration
+          ? `${style.textDecoration} ${mapped[1]}`
+          : mapped[1];
+      continue;
+    }
+    const color = cls.match(/^text-\[(#[0-9a-fA-F]{3,8})\]$/);
+    if (color) style.color = color[1];
+    const bg = cls.match(/^bg-\[(#[0-9a-fA-F]{3,8})\]$/);
+    if (bg) style.backgroundColor = bg[1];
+  }
+  const attr = findJsxAttr(element.openingElement, 'style');
+  const value = attr?.value;
+  if (value && t.isJSXExpressionContainer(value) && t.isObjectExpression(value.expression)) {
+    for (const prop of value.expression.properties) {
+      if (!t.isObjectProperty(prop) || prop.computed) continue;
+      const key = t.isIdentifier(prop.key)
+        ? prop.key.name
+        : t.isStringLiteral(prop.key)
+          ? prop.key.value
+          : null;
+      if (!key || !RICH_TEXT_STYLE_KEYS.has(key)) continue;
+      if (t.isStringLiteral(prop.value)) style[key] = prop.value.value;
+      else if (t.isNumericLiteral(prop.value)) style[key] = String(prop.value.value);
+    }
+  }
+  return style;
+}
+
+export type RichTextRead =
+  | { ok: true; text: string; runs: RichTextRun[]; rich: boolean }
+  | { ok: false; status: number; error: string };
+
+/**
+ * The element's text as styled runs, read from source: inline `style`
+ * keys and the tw classes the runs can express, on the wrappers between
+ * each text leaf and the element. `rich` is false when the text lives in
+ * a prop, a call site, or a data array, where only `set-text` can follow.
+ */
+export function readRichText(
+  source: string,
+  line: number,
+  column: number,
+  renderedText?: string,
+): RichTextRead {
+  const ast = parseSource(source);
+  if (!ast) return { ok: false, status: 422, error: 'could not parse source' };
+  const element = findInnermostJsxElement(ast, line, column);
+  if (!element) return { ok: false, status: 422, error: 'no JSX element at location' };
+
+  const parts: TextRangePart[] = [];
+  collectTextRangeParts(element, parts);
+  if (parts.length > 0) {
+    const runs: RichTextRun[] = [];
+    for (const part of parts) {
+      if (!('raw' in part)) {
+        runs.push({ text: '\n' });
+        continue;
+      }
+      const style: Record<string, string> = {};
+      const chain: t.JSXElement[] = [];
+      let parent: t.Node | null = part.parent;
+      while (parent && parent !== element && t.isJSXElement(parent)) {
+        chain.unshift(parent);
+        parent = jsxParentOf(ast, parent);
+      }
+      for (const wrapper of chain) Object.assign(style, richStyleOfElement(wrapper));
+      runs.push(
+        Object.keys(style).length > 0 ? { text: part.current, style } : { text: part.current },
+      );
+    }
+    return { ok: true, text: textRangeContent(parts), runs, rich: true };
+  }
+
+  // Text that lives in a prop, a call site, or a data array: a reused
+  // component has one candidate per instance, and the rendered snippet
+  // under the selection picks the instance out.
+  let candidates = collectElementTextCandidates(ast, element);
+  if (candidates.length > 1 && renderedText) {
+    const norm = renderedText.trim();
+    const matches = candidates.filter((c) => c.current === norm);
+    if (matches.length === 0) {
+      candidates = candidates.filter((c) => compactText(c.current) === compactText(norm));
+    } else {
+      candidates = matches;
+    }
+  }
+  if (candidates.length === 1) {
+    const text = candidates[0].current;
+    return { ok: true, text, runs: [{ text }], rich: false };
+  }
+  if (candidates.length > 1) {
+    return { ok: false, status: 422, error: 'element text is shared by several call sites' };
+  }
+  return { ok: false, status: 422, error: 'element has no editable text' };
+}
+
+function jsxParentOf(ast: t.File, target: t.JSXElement): t.JSXElement | null {
+  let found: t.JSXElement | null = null;
+  walkJsx(ast, (n) => {
+    if (!t.isJSXElement(n)) return;
+    if (n.children.includes(target)) {
+      found = n;
+      return 'stop';
+    }
+  });
+  return found;
+}
+
 // `<Wrap>{children}</Wrap>` and `<h2>{title}</h2>` — sole child is a
 // JSXExpressionContainer wrapping a bare Identifier. Returns the identifier
 // name; callers branch on `'children'` vs. a generic prop passthrough.
@@ -1201,6 +1402,13 @@ export function applyEdit(
     );
     if (result && 'error' in result) return { ok: false, status: 422, error: result.error };
     if (result) splices.push(...result);
+  }
+
+  for (const op of ops) {
+    if (op.kind !== 'set-rich-text') continue;
+    const result = buildRichTextSplice(source, element, op.runs, op.prevText);
+    if ('error' in result) return { ok: false, status: 422, error: result.error };
+    splices.push(result);
   }
 
   for (const op of ops) {

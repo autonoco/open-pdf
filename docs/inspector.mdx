@@ -21,11 +21,25 @@ With inspect mode on, hover highlights elements on the page. Click one and a sel
 
 - **Tag**: the source JSX tag, like `h1` or `div`.
 - **Source location**: line and column of the opening tag in `docs/<id>/index.tsx`.
-- **Text**: a snippet extracted from the PDF under the selected region, so you can confirm you picked the right node.
+- **Text**: a snippet extracted from the PDF under the selected region, so you can confirm you picked the right node, and an editor for it (below).
 
 Press <kbd>Escape</kbd> or click the **×** to clear the selection.
 
 Every selection is also written to the agent cursor at `node_modules/.open-pdf/current.json`, so you can skip the comment entirely and just tell your agent "make this bigger". See [For agents](/for-agents) for how that file works.
+
+## Editing text in place
+
+When the selected element carries text, the selection panel opens it in a small rich text editor (built on [editorcn](https://www.rtecn.space) and Tiptap). Type to change the copy; select a range and use the toolbar for bold, italic, underline, strikethrough, text colour, and highlight. Each change is written to `docs/<id>/index.tsx` about half a second after you stop, and the PDF re-renders from the saved file with the selection still open.
+
+Formatting lands in the source as inline styles on spans, the same shape an agent would write:
+
+```tsx
+<p tw="mt-3">Prepared for <span style={{ fontWeight: '700' }}>Harborline </span>Logistics Inc.</p>
+```
+
+The editor reads existing inline styles and the tw classes it can express (`font-bold`, `italic`, `underline`, `text-[#hex]`) on nested spans, so previously formatted runs show up formatted. Text that reaches the element through a prop, a call site, or a data array (`<KeyValue label="Client" />`, `{p.title}` inside a `.map`) is editable as plain text only: the toolbar hides, and the change is written where the literal lives. Enter inserts a line break inside the element; there is no way to add a second paragraph from the editor, that stays a job for your agent.
+
+Structural changes, new sections, and layout are still comments and agent work. The editor is for the copy and the emphasis.
 
 ## Leaving a comment
 

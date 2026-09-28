@@ -46,7 +46,8 @@ test.describe('inspector', () => {
 
     await expect(page.getByText('h1', { exact: true })).toBeVisible();
     await expect(page.getByText(new RegExp(`^line ${line}, col \\d+$`))).toBeVisible();
-    await expect(page.getByText('Editable headline')).toBeVisible();
+    await expect(page.getByText('“Editable headline”')).toBeVisible();
+    await expect(page.getByLabel('Element text')).toHaveText('Editable headline');
     await expect(page.getByPlaceholder(/Leave a note for your agent/)).toBeVisible();
   });
 
@@ -74,6 +75,51 @@ test.describe('inspector', () => {
       comments: { note: string }[];
     };
     expect(list.comments.map((c) => c.note)).toEqual(['make the headline bigger']);
+  });
+
+  test('formatting in the text editor writes inline styles into the source', async ({
+    page,
+    request,
+  }) => {
+    await openEditable(page, request, 'insp-rich');
+    await enableInspect(page);
+    await inspectBoxes(page, 'p').click();
+
+    const editor = page.getByLabel('Element text');
+    await expect(editor).toHaveText('Editable body copy');
+    await editor.click();
+    await page.keyboard.press('ControlOrMeta+a');
+    const saved = page.waitForResponse(
+      (res) => res.url().endsWith('/__edit') && res.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: 'Bold', exact: true }).click();
+    expect((await saved).status()).toBe(200);
+    await expect(page.getByText('Saved')).toBeVisible();
+    await expect
+      .poll(() => readDocSource('insp-rich'))
+      .toContain(
+        '<p tw="mt-4"><span style={{ fontWeight: \'700\' }}>Editable body copy</span></p>',
+      );
+    await expect(editor).toBeVisible();
+  });
+
+  test('typing in the text editor replaces the element text', async ({ page, request }) => {
+    await openEditable(page, request, 'insp-type');
+    await enableInspect(page);
+    await inspectBoxes(page, 'h1').click();
+
+    const editor = page.getByLabel('Element text');
+    await expect(editor).toHaveText('Editable headline');
+    await editor.click();
+    await page.keyboard.press('End');
+    const saved = page.waitForResponse(
+      (res) => res.url().endsWith('/__edit') && res.request().method() === 'POST',
+    );
+    await page.keyboard.type(' now');
+    expect((await saved).status()).toBe(200);
+    await expect
+      .poll(() => readDocSource('insp-type'))
+      .toContain('<h1 tw="text-[32px] font-bold">Editable headline now</h1>');
   });
 
   test('escape and the clear button dismiss the selection', async ({ page }) => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyEdit, safeAssetIdentifier } from './edit-ops.ts';
+import { applyEdit, readRichText, safeAssetIdentifier } from './edit-ops.ts';
 
 describe('applyEdit / set-style', () => {
   // Every JSX opening tag in these synthetic sources sits at column 0;
@@ -1142,5 +1142,181 @@ describe('applyEdit / replace-placeholder-with-image', () => {
     expect(r.ok).toBe(false);
     if (r.ok) throw new Error('expected failure');
     expect(r.error).toMatch(/\.\/assets\//);
+  });
+});
+
+describe('applyEdit / set-rich-text', () => {
+  it('wraps styled runs in inline-style spans and leaves plain runs bare', () => {
+    const src = ['export default [() => (', '<h1>Hello world</h1>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-rich-text',
+        runs: [{ text: 'Hello ' }, { text: 'world', style: { fontWeight: '700' } }],
+        prevText: 'Hello world',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain("<h1>Hello <span style={{ fontWeight: '700' }}>world</span></h1>");
+  });
+
+  it('replaces existing inline wrappers with the new runs', () => {
+    const src = [
+      'export default [() => (',
+      "<p>Hi <span style={{ color: 'red' }}>there</span> friend</p>",
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-rich-text',
+        runs: [
+          { text: 'Hi there ', style: { fontStyle: 'italic', color: '#0000ff' } },
+          { text: 'friend' },
+        ],
+        prevText: 'Hi there friend',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain(
+      "<p><span style={{ fontStyle: 'italic', color: '#0000ff' }}>Hi there </span>friend</p>",
+    );
+  });
+
+  it('turns newlines into JSX breaks and keeps comment markers', () => {
+    const src = [
+      'export default [() => (',
+      '<h2>',
+      '  {/* @pdf-comment id="c-1" ts="t" text="e30" */}',
+      '  Hello',
+      '</h2>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-rich-text',
+        runs: [{ text: 'Hello\nagain', style: { textDecoration: 'underline' } }],
+        prevText: 'Hello',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain(
+      '<h2>{/* @pdf-comment id="c-1" ts="t" text="e30" */}<span style={{ textDecoration: \'underline\' }}>Hello<br />again</span></h2>',
+    );
+  });
+
+  it('keeps the space after a styled run inside that run', () => {
+    const src = ['export default [() => (', '<p>Prepared for Harborline</p>', ')];', ''].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-rich-text',
+        runs: [
+          { text: 'Prepared ' },
+          { text: 'for', style: { fontStyle: 'italic' } },
+          { text: ' Harborline' },
+        ],
+        prevText: 'Prepared for Harborline',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain(
+      "<p>Prepared <span style={{ fontStyle: 'italic' }}>for </span>Harborline</p>",
+    );
+  });
+
+  it('rejects a stale prevText and unsupported style keys', () => {
+    const src = ['export default [() => (', '<h1>Hello world</h1>', ')];', ''].join('\n');
+    const stale = applyEdit(src, 2, 0, [
+      { kind: 'set-rich-text', runs: [{ text: 'x' }], prevText: 'Something else' },
+    ]);
+    expect(stale.ok).toBe(false);
+    const badKey = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-rich-text',
+        runs: [{ text: 'Hello world', style: { position: 'absolute' } }],
+        prevText: 'Hello world',
+      },
+    ]);
+    expect(badKey.ok).toBe(false);
+  });
+
+  it('locates the element by prevText when the source location is stale', () => {
+    const src = [
+      'export default [() => (',
+      '<div>',
+      '<h1>Hello world</h1>',
+      '</div>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-rich-text',
+        runs: [{ text: 'Hello ' }, { text: 'world', style: { backgroundColor: '#ffff00' } }],
+        prevText: 'Hello world',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain(
+      "<h1>Hello <span style={{ backgroundColor: '#ffff00' }}>world</span></h1>",
+    );
+  });
+});
+
+describe('readRichText', () => {
+  it('reads inline styles and tw classes on wrappers into runs', () => {
+    const src = [
+      'export default [() => (',
+      '<p tw="mt-4 font-bold">',
+      '  Hello <span tw="italic text-[#ff0000]">big</span> <em style={{ fontWeight: \'700\' }}>world</em>',
+      '  <br />',
+      '  again',
+      '</p>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = readRichText(src, 2, 0);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.rich).toBe(true);
+    expect(r.text).toBe('Hello big world\nagain');
+    expect(r.runs).toEqual([
+      { text: 'Hello ' },
+      { text: 'big', style: { fontStyle: 'italic', color: '#ff0000' } },
+      { text: ' ' },
+      { text: 'world', style: { fontWeight: '700' } },
+      { text: '\n' },
+      { text: 'again' },
+    ]);
+  });
+
+  it('reports prop-driven text as plain-only', () => {
+    const src = [
+      'function Title({ label }: { label: string }) {',
+      '  return <h2>{label}</h2>;',
+      '}',
+      'export default [() => <Title label="Quarterly" />];',
+      '',
+    ].join('\n');
+    const r = readRichText(src, 2, 9);
+    if (!r.ok) throw new Error(r.error);
+    expect(r).toEqual({ ok: true, text: 'Quarterly', runs: [{ text: 'Quarterly' }], rich: false });
+  });
+
+  it('picks the call site of a reused component by its rendered text', () => {
+    const src = [
+      'function Row({ label }: { label: string }) {',
+      '  return <span>{label}</span>;',
+      '}',
+      'export default [() => (<div><Row label="Client" /><Row label="Term" /></div>)];',
+      '',
+    ].join('\n');
+    expect(readRichText(src, 2, 9).ok).toBe(false);
+    const r = readRichText(src, 2, 9, 'Term');
+    expect(r).toEqual({ ok: true, text: 'Term', runs: [{ text: 'Term' }], rich: false });
+  });
+
+  it('fails for elements without text', () => {
+    const src = ['export default [() => (', '<div><img src="x.png" /></div>', ')];', ''].join('\n');
+    expect(readRichText(src, 2, 0).ok).toBe(false);
   });
 });

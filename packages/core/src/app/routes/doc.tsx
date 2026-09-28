@@ -24,6 +24,7 @@ import {
 import { readLastHomeLocation } from '@/lib/last-home-location';
 import { cn } from '@/lib/utils';
 import { type EditableFormat, FORMAT_MIME } from '../../export/editable';
+import { RichContentField } from '../components/inspector/rich-content-field';
 import { buildHitMap, extractBoxText, type LocBox, type PageHitMap } from '../lib/pdf/hit-map';
 import { InspectOverlay } from '../lib/pdf/inspect-overlay';
 import { PdfPageCanvas, usePdfDocument } from '../lib/pdf/pdf-viewer';
@@ -87,14 +88,24 @@ export function Doc() {
   const [note, setNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
 
+  // Each save re-renders the PDF; the selection survives when its element
+  // is still there, so an edit in progress keeps its editor open.
   useEffect(() => {
-    setSelection(null);
     setHitMap(null);
-    if (!pdfDoc || Object.keys(tags).length === 0) return;
+    if (!pdfDoc || Object.keys(tags).length === 0) {
+      setSelection(null);
+      return;
+    }
     let cancelled = false;
     buildHitMap(pdfDoc, tags)
       .then((maps) => {
-        if (!cancelled) setHitMap(maps);
+        if (cancelled) return;
+        setHitMap(maps);
+        setSelection((sel) => {
+          if (!sel) return null;
+          const box = maps[sel.pageIndex]?.boxes.find((b) => b.loc === sel.box.loc);
+          return box ? { ...sel, box } : null;
+        });
       })
       .catch(() => {
         if (!cancelled) setHitMap(null);
@@ -106,8 +117,9 @@ export function Doc() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement | null)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
       if (e.key === 'i') setInspecting((v) => !v);
       if (e.key === 'Escape') setSelection(null);
     };
@@ -378,6 +390,13 @@ export function Doc() {
                   “{selection.text}”
                 </p>
               )}
+              <RichContentField
+                key={selection.box.loc}
+                docId={docId}
+                line={Number(selection.box.loc.split(':')[0])}
+                column={Number(selection.box.loc.split(':')[1])}
+                rendered={selection.text}
+              />
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}

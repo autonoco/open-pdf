@@ -1,8 +1,11 @@
 import { useCallback } from 'react';
 
+export type RichTextRun = { text: string; style?: Record<string, string> };
+
 export type EditOp =
   | { kind: 'set-style'; key: string; value: string | null; prevText?: string }
   | { kind: 'set-text'; value: string; prevText?: string }
+  | { kind: 'set-rich-text'; runs: RichTextRun[]; prevText?: string }
   | {
       kind: 'set-text-range-style';
       start: number;

@@ -13,6 +13,7 @@
       "!**/*.tsbuildinfo",
       "!**/*.svg",
       "!packages/core/src/app/components/ui",
+      "!packages/core/src/app/components/editor",
       "!docs",
       "!notes"
     ]
