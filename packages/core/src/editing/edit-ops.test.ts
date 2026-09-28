@@ -1374,6 +1374,33 @@ describe('readRichText', () => {
     expect(r.ok).toBe(false);
   });
 
+  it('is plain-only when a wrapper carries a style or class runs cannot express', () => {
+    const dynamicStyle = [
+      'export default [() => (',
+      '<p>Hello <span style={{ fontWeight: weight }}>there</span></p>',
+      ')];',
+      '',
+    ].join('\n');
+    const a = readRichText(dynamicStyle, 2, 0);
+    expect(a.ok && a.rich).toBe(false);
+    const unmappedClass = [
+      'export default [() => (',
+      '<p>Hello <span tw="text-slate-500 uppercase">there</span></p>',
+      ')];',
+      '',
+    ].join('\n');
+    const b = readRichText(unmappedClass, 2, 0);
+    expect(b.ok && b.rich).toBe(false);
+    const mapped = [
+      'export default [() => (',
+      '<p>Hello <span tw="font-semibold text-[#ff0000]" style={{ fontStyle: \'italic\' }}>there</span></p>',
+      ')];',
+      '',
+    ].join('\n');
+    const c = readRichText(mapped, 2, 0);
+    expect(c.ok && c.rich).toBe(true);
+  });
+
   it('fails for elements without text', () => {
     const src = ['export default [() => (', '<div><img src="x.png" /></div>', ')];', ''].join('\n');
     expect(readRichText(src, 2, 0).ok).toBe(false);

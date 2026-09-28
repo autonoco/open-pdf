@@ -30,6 +30,27 @@ const SingleParagraph = Extension.create({
   },
 });
 
+// Lets a run remember a 600/800/900 weight on its textStyle mark while
+// bold stays a single toggle; see boldWeight in lib/inspector/rich-text.
+const FontWeightAttribute = Extension.create({
+  name: 'fontWeightAttribute',
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['textStyle'],
+        attributes: {
+          fontWeight: {
+            default: null,
+            parseHTML: (element: HTMLElement) => element.style.fontWeight || null,
+            renderHTML: (attributes: Record<string, unknown>) =>
+              attributes.fontWeight ? { style: `font-weight: ${attributes.fontWeight}` } : {},
+          },
+        },
+      },
+    ];
+  },
+});
+
 const extensions = [
   StarterKit.configure({
     blockquote: false,
@@ -48,6 +69,7 @@ const extensions = [
   }),
   SingleParagraph,
   TextStyle,
+  FontWeightAttribute,
   Color,
   Highlight.configure({ multicolor: true }),
 ];

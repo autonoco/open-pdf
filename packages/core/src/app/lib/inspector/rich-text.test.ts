@@ -29,6 +29,14 @@ describe('marks and styles', () => {
     });
   });
 
+  it('keeps a non-700 bold weight across the round trip', () => {
+    const marks = styleToMarks({ fontWeight: '800' });
+    expect(marks).toEqual([{ type: 'bold' }, { type: 'textStyle', attrs: { fontWeight: '800' } }]);
+    expect(marksToStyle(marks)).toEqual({ fontWeight: '800' });
+    expect(marksToStyle([{ type: 'bold' }])).toEqual({ fontWeight: '700' });
+    expect(marksToStyle([{ type: 'textStyle', attrs: { fontWeight: '800' } }])).toEqual({});
+  });
+
   it('round-trips a style through marks', () => {
     const style = {
       fontWeight: '700',
