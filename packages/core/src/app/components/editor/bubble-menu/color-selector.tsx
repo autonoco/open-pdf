@@ -1,5 +1,5 @@
 import type { Editor } from "@tiptap/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   RteButton,
@@ -84,6 +84,21 @@ export const ColorSelector = ({ editor }: { editor: Editor }) => {
   const [open, setOpen] = useState(false);
   const [recent, setRecent] = useState<RecentColor[]>(() => readRecentColors());
 
+  // Focus stays in the editor or on the trigger while the dropdown is
+  // open, so Escape has to be caught at the document, not on the overlay.
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
   const { highlightColor, textColor } = useEditorState(
     editor,
     (ed) => ({
@@ -166,14 +181,7 @@ export const ColorSelector = ({ editor }: { editor: Editor }) => {
       </RteButton>
       {open && (
         <>
-          <RteOverlay
-            onClick={() => setOpen(false)}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                setOpen(false);
-              }
-            }}
-          />
+          <RteOverlay onClick={() => setOpen(false)} />
           <RteDropdown variant="color">
             {recent.length > 0 ? (
               <div className="rte-bubble-color-section">

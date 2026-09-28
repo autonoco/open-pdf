@@ -1346,6 +1346,34 @@ describe('readRichText', () => {
     expect(r).toEqual({ ok: true, text: 'Term', runs: [{ text: 'Term' }], rich: false });
   });
 
+  it('is plain-only when the element holds content runs cannot carry', () => {
+    const dynamic = ['export default [() => (', '<p>Hello {name}, welcome</p>', ')];', ''].join(
+      '\n',
+    );
+    expect(readRichText(dynamic, 2, 0)).toEqual({
+      ok: true,
+      text: 'Hello , welcome',
+      runs: [{ text: 'Hello , welcome' }],
+      rich: false,
+    });
+    const linked = [
+      'export default [() => (',
+      '<p>See <a href="https://x.test" tw="underline">the docs</a> now</p>',
+      ')];',
+      '',
+    ].join('\n');
+    const read = readRichText(linked, 2, 0);
+    expect(read.ok && read.rich).toBe(false);
+    const r = applyEdit(linked, 2, 0, [
+      {
+        kind: 'set-rich-text',
+        runs: [{ text: 'See the docs now' }],
+        prevText: 'See the docs now',
+      },
+    ]);
+    expect(r.ok).toBe(false);
+  });
+
   it('fails for elements without text', () => {
     const src = ['export default [() => (', '<div><img src="x.png" /></div>', ')];', ''].join('\n');
     expect(readRichText(src, 2, 0).ok).toBe(false);
