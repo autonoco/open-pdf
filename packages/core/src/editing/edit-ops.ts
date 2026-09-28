@@ -242,9 +242,51 @@ function findElementForEdit(
   ) {
     return element;
   }
+  // A rich edit rewrites the element's whole content, wrappers included.
+  // The element at the location is the one the user clicked; when only a
+  // text match is available, take the outermost wrapper with that text so
+  // a `<span style>` the previous save wrote is replaced, not edited inside.
+  if (ops.some((op) => op.kind === 'set-rich-text')) {
+    if (element && elementTextMatches(element, prevText)) {
+      return innermostBlockWithSameText(element, prevText);
+    }
+    const textMatch = findUniqueElementByText(ast, prevText);
+    return textMatch ? outsideInlineWrappers(ast, textMatch, prevText) : element;
+  }
   const textMatch = findUniqueElementByText(ast, prevText);
   if (element && elementTextMatches(element, prevText)) return textMatch ?? element;
   return textMatch ?? element;
+}
+
+const INLINE_WRAPPER_TAGS = new Set(['span', 'em', 'strong', 'b', 'i', 'u', 's', 'mark']);
+
+function isInlineWrapper(element: t.JSXElement): boolean {
+  const name = element.openingElement.name;
+  return t.isJSXIdentifier(name) && INLINE_WRAPPER_TAGS.has(name.name);
+}
+
+// `<div><h1>text</h1></div>` at the div: the text belongs to the h1, so
+// edit there. `<h1><span style>text</span></h1>` at the h1: the span is
+// formatting a previous save wrote, so the h1 is the element to rewrite.
+function innermostBlockWithSameText(element: t.JSXElement, text: string): t.JSXElement {
+  let current = element;
+  for (;;) {
+    const meaningful = meaningfulChildren(current);
+    const only = meaningful.length === 1 ? meaningful[0] : null;
+    if (!only || !t.isJSXElement(only) || isInlineWrapper(only)) return current;
+    if (!elementTextMatches(only, text)) return current;
+    current = only;
+  }
+}
+
+function outsideInlineWrappers(ast: t.File, element: t.JSXElement, text: string): t.JSXElement {
+  let current = element;
+  while (isInlineWrapper(current)) {
+    const parent = jsxParentOf(ast, current);
+    if (!parent || !elementTextMatches(parent, text)) return current;
+    current = parent;
+  }
+  return current;
 }
 
 function buildStyleSplice(

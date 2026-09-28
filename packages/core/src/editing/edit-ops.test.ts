@@ -1224,6 +1224,37 @@ describe('applyEdit / set-rich-text', () => {
     );
   });
 
+  it('removes a wrapper span a previous save wrote instead of editing inside it', () => {
+    const src = [
+      'export default [() => (',
+      '<h1 tw="font-bold"><span style={{ textDecoration: \'line-through\' }}>Platform Modernization</span></h1>',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 2, 0, [
+      {
+        kind: 'set-rich-text',
+        runs: [{ text: 'Platform Modernization' }],
+        prevText: 'Platform Modernization',
+      },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toContain('<h1 tw="font-bold">Platform Modernization</h1>');
+
+    // Stale location: the text match must still climb past the wrapper.
+    const stale = applyEdit(src, 1, 0, [
+      {
+        kind: 'set-rich-text',
+        runs: [{ text: 'Platform ' }, { text: 'Modernization', style: { fontWeight: '700' } }],
+        prevText: 'Platform Modernization',
+      },
+    ]);
+    if (!stale.ok) throw new Error(`expected ok, got ${stale.error}`);
+    expect(stale.source).toContain(
+      '<h1 tw="font-bold">Platform <span style={{ fontWeight: \'700\' }}>Modernization</span></h1>',
+    );
+  });
+
   it('rejects a stale prevText and unsupported style keys', () => {
     const src = ['export default [() => (', '<h1>Hello world</h1>', ')];', ''].join('\n');
     const stale = applyEdit(src, 2, 0, [
