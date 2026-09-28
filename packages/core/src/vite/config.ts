@@ -106,6 +106,12 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
         'tailwind-merge',
         'class-variance-authority',
         'emoji-picker-react',
+        '@tiptap/core',
+        '@tiptap/react',
+        '@tiptap/react/menus',
+        '@tiptap/starter-kit',
+        '@tiptap/extension-text-style',
+        '@tiptap/extension-highlight',
       ],
       // The app source ships inside node_modules/@autono/open-pdf/src/app, so
       // Vite's dep scanner traverses it as if it were a third-party dep and
