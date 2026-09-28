@@ -14,13 +14,21 @@ export function styleEquals(a: RichStyle | undefined, b: RichStyle | undefined):
   return ka.every((k) => a?.[k] === b?.[k]);
 }
 
+// Bold is one mark in the editor but 600, 700, 800, or 900 in the source.
+// The weight rides on the textStyle mark so an untouched run keeps it;
+// toggling bold on fresh text lands on 700.
+function boldWeight(marks: NonNullable<JSONContent['marks']>): string {
+  const carried = marks.find((m) => m.type === 'textStyle')?.attrs?.fontWeight;
+  return typeof carried === 'string' && Number(carried) >= 600 ? carried : '700';
+}
+
 export function marksToStyle(marks: JSONContent['marks']): RichStyle {
   const style: RichStyle = {};
   const decorations: string[] = [];
   for (const mark of marks ?? []) {
     switch (mark.type) {
       case 'bold':
-        style.fontWeight = '700';
+        style.fontWeight = boldWeight(marks ?? []);
         break;
       case 'italic':
         style.fontStyle = 'italic';
@@ -50,12 +58,16 @@ export function marksToStyle(marks: JSONContent['marks']): RichStyle {
 export function styleToMarks(style: RichStyle | undefined): NonNullable<JSONContent['marks']> {
   const marks: NonNullable<JSONContent['marks']> = [];
   if (!style) return marks;
-  if (style.fontWeight && Number(style.fontWeight) >= 600) marks.push({ type: 'bold' });
+  const weight = style.fontWeight && Number(style.fontWeight) >= 600 ? style.fontWeight : null;
+  if (weight) marks.push({ type: 'bold' });
   if (style.fontStyle === 'italic') marks.push({ type: 'italic' });
   const decoration = style.textDecoration ?? '';
   if (decoration.includes('underline')) marks.push({ type: 'underline' });
   if (decoration.includes('line-through')) marks.push({ type: 'strike' });
-  if (style.color) marks.push({ type: 'textStyle', attrs: { color: style.color } });
+  const textStyle: Record<string, string> = {};
+  if (style.color) textStyle.color = style.color;
+  if (weight && weight !== '700') textStyle.fontWeight = weight;
+  if (Object.keys(textStyle).length > 0) marks.push({ type: 'textStyle', attrs: textStyle });
   if (style.backgroundColor)
     marks.push({ type: 'highlight', attrs: { color: style.backgroundColor } });
   return marks;

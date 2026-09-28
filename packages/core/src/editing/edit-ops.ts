@@ -859,13 +859,53 @@ function formatRichTextRun(run: RichTextRun): string {
   return `<span style={{ ${style} }}>${text}</span>`;
 }
 
-const RICH_WRAPPER_ATTRS = new Set(['tw', 'style', 'key']);
+function twClassRepresentable(cls: string): boolean {
+  return (
+    cls === '' ||
+    cls in TW_RICH_CLASSES ||
+    /^text-\[#[0-9a-fA-F]{3,8}\]$/.test(cls) ||
+    /^bg-\[#[0-9a-fA-F]{3,8}\]$/.test(cls)
+  );
+}
+
+// A wrapper survives a rewrite only when every attribute maps onto a run
+// style: `tw` as a string literal of representable classes, `style` as an
+// object literal of representable keys with literal values. A dynamic
+// value or an unmapped class would be silently dropped.
+function wrapperAttrsRepresentable(element: t.JSXElement): boolean {
+  for (const attr of element.openingElement.attributes) {
+    if (!t.isJSXAttribute(attr)) return false;
+    const name = jsxAttrName(attr);
+    if (name === 'key') continue;
+    if (name === 'tw') {
+      const tw = readJsxStringAttr(element.openingElement, 'tw');
+      if (tw === null || !tw.split(/\s+/).every(twClassRepresentable)) return false;
+      continue;
+    }
+    if (name !== 'style') return false;
+    const value = attr.value;
+    if (!value || !t.isJSXExpressionContainer(value) || !t.isObjectExpression(value.expression)) {
+      return false;
+    }
+    for (const prop of value.expression.properties) {
+      if (!t.isObjectProperty(prop) || prop.computed) return false;
+      const key = t.isIdentifier(prop.key)
+        ? prop.key.name
+        : t.isStringLiteral(prop.key)
+          ? prop.key.value
+          : null;
+      if (!key || !RICH_TEXT_STYLE_KEYS.has(key)) return false;
+      if (!t.isStringLiteral(prop.value) && !t.isNumericLiteral(prop.value)) return false;
+    }
+  }
+  return true;
+}
 
 // Rewriting an element as runs keeps only what runs can express: text,
 // literal expressions, `<br />`, comment markers, and inline wrappers whose
-// only attributes are `tw` and `style`. Anything else (`{name}`, `<Icon />`,
-// `<a href>`) would be dropped by the rewrite, so such elements are plain-
-// text only.
+// attributes all map onto run styles. Anything else (`{name}`, `<Icon />`,
+// `<a href>`, `style={styles.x}`) would be dropped by the rewrite, so such
+// elements are plain-text only.
 function richTextRepresentable(parent: JsxParent): boolean {
   for (const child of parent.children) {
     if (t.isJSXText(child)) continue;
@@ -884,10 +924,7 @@ function richTextRepresentable(parent: JsxParent): boolean {
       const tag = child.openingElement.name;
       if (t.isJSXIdentifier(tag) && tag.name.toLowerCase() === 'br') continue;
       if (!isInlineWrapper(child)) return false;
-      const plainAttrs = child.openingElement.attributes.every(
-        (attr) => t.isJSXAttribute(attr) && RICH_WRAPPER_ATTRS.has(jsxAttrName(attr) ?? ''),
-      );
-      if (!plainAttrs || !richTextRepresentable(child)) return false;
+      if (!wrapperAttrsRepresentable(child) || !richTextRepresentable(child)) return false;
       continue;
     }
     return false;
