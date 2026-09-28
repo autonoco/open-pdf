@@ -47,6 +47,7 @@ interface ToggleableChain {
 
 const textItems = [
   {
+    label: "Bold",
     command: (e: Editor) =>
       (e.chain().focus() as unknown as ToggleableChain).toggleBold().run(),
     icon: (
@@ -60,6 +61,7 @@ const textItems = [
     isActive: (s: TextSelectorResult) => s.isBold,
   },
   {
+    label: "Italic",
     command: (e: Editor) =>
       (e.chain().focus() as unknown as ToggleableChain).toggleItalic().run(),
     icon: (
@@ -74,6 +76,7 @@ const textItems = [
     isActive: (s: TextSelectorResult) => s.isItalic,
   },
   {
+    label: "Underline",
     command: (e: Editor) =>
       (e.chain().focus() as unknown as ToggleableChain).toggleUnderline().run(),
     icon: (
@@ -87,6 +90,7 @@ const textItems = [
     isActive: (s: TextSelectorResult) => s.isUnderline,
   },
   {
+    label: "Strikethrough",
     command: (e: Editor) =>
       (e.chain().focus() as unknown as ToggleableChain).toggleStrike().run(),
     icon: (
@@ -101,6 +105,7 @@ const textItems = [
     isActive: (s: TextSelectorResult) => s.isStrike,
   },
   {
+    label: "Code",
     command: (e: Editor) =>
       (e.chain().focus() as unknown as ToggleableChain).toggleCode().run(),
     icon: (
@@ -134,6 +139,8 @@ export const TextButtons = ({ editor }: { editor: Editor }) => {
         <RteButton
           key={i}
           active={item.isActive(editorState)}
+          aria-label={item.label}
+          title={item.label}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => item.command(editor)}
         >

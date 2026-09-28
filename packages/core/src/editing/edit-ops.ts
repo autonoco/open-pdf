@@ -859,6 +859,42 @@ function formatRichTextRun(run: RichTextRun): string {
   return `<span style={{ ${style} }}>${text}</span>`;
 }
 
+const RICH_WRAPPER_ATTRS = new Set(['tw', 'style', 'key']);
+
+// Rewriting an element as runs keeps only what runs can express: text,
+// literal expressions, `<br />`, comment markers, and inline wrappers whose
+// only attributes are `tw` and `style`. Anything else (`{name}`, `<Icon />`,
+// `<a href>`) would be dropped by the rewrite, so such elements are plain-
+// text only.
+function richTextRepresentable(parent: JsxParent): boolean {
+  for (const child of parent.children) {
+    if (t.isJSXText(child)) continue;
+    if (t.isJSXExpressionContainer(child)) {
+      const expr = child.expression;
+      if (t.isJSXEmptyExpression(expr) || t.isStringLiteral(expr) || t.isNumericLiteral(expr)) {
+        continue;
+      }
+      return false;
+    }
+    if (t.isJSXFragment(child)) {
+      if (!richTextRepresentable(child)) return false;
+      continue;
+    }
+    if (t.isJSXElement(child)) {
+      const tag = child.openingElement.name;
+      if (t.isJSXIdentifier(tag) && tag.name.toLowerCase() === 'br') continue;
+      if (!isInlineWrapper(child)) return false;
+      const plainAttrs = child.openingElement.attributes.every(
+        (attr) => t.isJSXAttribute(attr) && RICH_WRAPPER_ATTRS.has(jsxAttrName(attr) ?? ''),
+      );
+      if (!plainAttrs || !richTextRepresentable(child)) return false;
+      continue;
+    }
+    return false;
+  }
+  return true;
+}
+
 // The whole text content of the element as styled runs. Rewrites every
 // child, so existing inline wrappers are replaced by `<span style>` runs;
 // comment markers among the direct children are kept at the front.
@@ -876,6 +912,9 @@ function buildRichTextSplice(
   const parts: TextRangePart[] = [];
   collectTextRangeParts(element, parts);
   if (parts.length === 0) return { error: 'element has no editable text' };
+  if (!richTextRepresentable(element)) {
+    return { error: 'element holds content the rich text editor cannot rewrite' };
+  }
   const current = textRangeContent(parts);
   if (prevText !== undefined && !textMatchesExpected(current, prevText)) {
     return { error: 'no text candidate matches the current value' };
@@ -955,7 +994,9 @@ export type RichTextRead =
  * The element's text as styled runs, read from source: inline `style`
  * keys and the tw classes the runs can express, on the wrappers between
  * each text leaf and the element. `rich` is false when the text lives in
- * a prop, a call site, or a data array, where only `set-text` can follow.
+ * a prop, a call site, or a data array, or when the element holds content
+ * runs cannot carry (dynamic expressions, components, attributed wrappers);
+ * only `set-text` can follow there.
  */
 export function readRichText(
   source: string,
@@ -989,7 +1030,9 @@ export function readRichText(
         Object.keys(style).length > 0 ? { text: part.current, style } : { text: part.current },
       );
     }
-    return { ok: true, text: textRangeContent(parts), runs, rich: true };
+    const text = textRangeContent(parts);
+    if (!richTextRepresentable(element)) return { ok: true, text, runs: [{ text }], rich: false };
+    return { ok: true, text, runs, rich: true };
   }
 
   // Text that lives in a prop, a call site, or a data array: a reused
