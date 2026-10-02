@@ -133,6 +133,8 @@ Headings anchor sections; read the target range with `offset` + `limit`. Read th
 
 If `themes/<id>.md` exists and the doc is meant to follow it, **the theme file overrides the defaults in this skill** — its palette, typography, and fixed components are authoritative. Read the theme before applying anything else here. Themes are produced by the `create-theme` skill.
 
+**Never apply a theme to a legal document** (contract, NDA, agreement, terms, policy, or any doc started from a `contract-*` template), even when asked to restyle "all docs". Keep its classic typesetting and leave `meta.theme` unset. If a user explicitly asks to theme a contract, say why it's excluded and confirm before doing anything.
+
 ## Runtime behavior you get for free
 
 - Home page lists every folder under `docs/`; cards show a live first-page preview.
