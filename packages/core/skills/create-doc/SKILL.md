@@ -11,7 +11,9 @@ You only write files under `docs/<id>/`. Never modify `package.json`, `open-pdf.
 
 ## Step 1 — Pick a theme
 
-List files under `themes/`. If any theme markdown files exist (anything other than `README.md`), call `AskUserQuestion` with each theme id as an option plus a final **"no theme — design from scratch"** option. (`AskUserQuestion` holds at most 4 options — with 4+ themes, offer the 3 most topic-relevant plus "no theme"; the auto-added "Other" lets the user name any omitted theme.)
+**Legal documents never take a theme.** For a contract, NDA, agreement, terms, policy, or any doc started from a `contract-*` template, skip this step entirely: don't offer themes, don't set `meta.theme`, and keep the classic typesetting of the `contract-mutual-nda` template (Tinos serif, justified body, bold run-in clause headings, black ink). Brand palettes and display type undermine the formality readers expect from a legal document.
+
+Otherwise, list files under `themes/`. If any theme markdown files exist (anything other than `README.md`), call `AskUserQuestion` with each theme id as an option plus a final **"no theme — design from scratch"** option. (`AskUserQuestion` holds at most 4 options — with 4+ themes, offer the 3 most topic-relevant plus "no theme"; the auto-added "Other" lets the user name any omitted theme.)
 
 - If the user picks a theme: read `themes/<id>.md` end-to-end. The theme's palette, typography, and fixed components are now authoritative — copy them directly into the doc. **Also set `theme: '<theme-id>'` on the `meta` export** so the doc back-links to the theme. In Step 2, skip the **visual direction** question (the theme already commits to one); confirm the topic itself before moving on. Length and density are independent of theme — ask those normally.
 - If the user picks "no theme", or `themes/` contains no theme markdown files: proceed to Step 2 unchanged.
