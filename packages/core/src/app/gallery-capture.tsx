@@ -4,7 +4,21 @@ import { PdfPageCanvas, usePdfDocument } from './lib/pdf/pdf-viewer';
 import { useDocPdf } from './lib/pdf/use-doc-pdf';
 
 function PdfCapture({ id }: { id: string }) {
-  const { bytes, version, error: renderError } = useDocPdf(id);
+  const { bytes, version, error, rendering } = useDocPdf(id);
+  if (error) return <div data-document-error={error} />;
+  if (rendering || !bytes) return null;
+  return <PdfCaptureRender key={version} id={id} bytes={bytes} version={version} />;
+}
+
+function PdfCaptureRender({
+  id,
+  bytes,
+  version,
+}: {
+  id: string;
+  bytes: Uint8Array;
+  version: number;
+}) {
   const { doc, error: pdfError } = usePdfDocument(bytes, version);
   const [width, setWidth] = useState<number | null>(null);
   const [metadataReady, setMetadataReady] = useState(false);
@@ -46,7 +60,7 @@ function PdfCapture({ id }: { id: string }) {
   }, [doc]);
   const onRendered = useCallback(() => setReady(true), []);
   const onRenderError = useCallback((cause: unknown) => setError(String(cause)), []);
-  const failure = error ?? renderError ?? pdfError;
+  const failure = error ?? pdfError;
   return (
     <div
       className="flex h-svh w-full items-center justify-center"
