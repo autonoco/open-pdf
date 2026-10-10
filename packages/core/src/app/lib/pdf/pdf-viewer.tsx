@@ -63,6 +63,8 @@ type PdfPageCanvasProps = {
   /** CSS pixel width to fit the page into. */
   width: number;
   className?: string;
+  onRendered?: () => void;
+  onRenderError?: (error: unknown) => void;
 };
 
 export const PdfPageCanvas = memo(function PdfPageCanvas({
@@ -70,6 +72,8 @@ export const PdfPageCanvas = memo(function PdfPageCanvas({
   pageNumber,
   width,
   className,
+  onRendered,
+  onRenderError,
 }: PdfPageCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -94,18 +98,22 @@ export const PdfPageCanvas = memo(function PdfPageCanvas({
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
         renderTask = page.render({ canvasContext: ctx, canvas, viewport });
-        renderTask.promise.catch(() => {
-          // Cancelled renders throw; benign.
-        });
+        renderTask.promise
+          .then(() => {
+            if (!cancelled) onRendered?.();
+          })
+          .catch((error) => {
+            if (!cancelled) onRenderError?.(error);
+          });
       })
-      .catch(() => {
-        // Page fetch after the document was destroyed; benign during doc swaps.
+      .catch((error) => {
+        if (!cancelled) onRenderError?.(error);
       });
     return () => {
       cancelled = true;
       renderTask?.cancel();
     };
-  }, [doc, pageNumber, width]);
+  }, [doc, pageNumber, width, onRendered, onRenderError]);
 
   return <canvas ref={canvasRef} className={className} />;
 });
