@@ -17,27 +17,42 @@ import type {
 //
 // The worker's module graph top-level-awaits WASM init, so its onmessage
 // handler registers late; Chrome drops messages that arrive before then. The
-// worker posts {type:'boot'} once ready — gate every send on that.
+// worker posts {type:'boot'} once ready — gate every send on that. An error
+// before boot means the module graph failed to load and boot will never come.
 let workerReady: Promise<Worker> | null = null;
 function getWorker(): Promise<Worker> {
   if (!workerReady) {
     const worker = new Worker(new URL('./render-worker.ts', import.meta.url), {
       type: 'module',
     });
-    worker.addEventListener('error', (e) => {
-      console.error('[open-pdf] render worker error:', e.message, e.filename, e.lineno);
-    });
-    workerReady = new Promise<Worker>((resolve) => {
+    const ready = new Promise<Worker>((resolve, reject) => {
       const onBoot = (e: MessageEvent) => {
         if (e.data?.type === 'boot') {
           worker.removeEventListener('message', onBoot);
+          worker.removeEventListener('error', onBootError);
           resolve(worker);
         }
       };
+      const onBootError = (e: ErrorEvent) => {
+        worker.removeEventListener('message', onBoot);
+        worker.removeEventListener('error', onBootError);
+        worker.terminate();
+        if (workerReady === ready) workerReady = null;
+        reject(new Error(`Render worker failed to start: ${e.message || 'module load failed'}`));
+      };
       worker.addEventListener('message', onBoot);
+      worker.addEventListener('error', onBootError);
     });
+    worker.addEventListener('error', (e) => {
+      console.error('[open-pdf] render worker error:', e.message, e.filename, e.lineno);
+    });
+    workerReady = ready;
   }
   return workerReady;
+}
+
+function errorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
 }
 
 let seqCounter = 0;
@@ -82,37 +97,43 @@ export function useDocPdf(docId: string): DocPdfState & { rerender: () => void }
     }
     setState((s) => ({ ...s, rendering: true, error: null }));
 
-    void getWorker().then((worker) => {
-      if (latestSeqRef.current !== seq) return; // superseded while booting
-      const onMessage = (event: MessageEvent<RenderResponse>) => {
-        const msg = event.data;
-        if (msg.seq !== seq || (msg.type !== 'rendered' && msg.type !== 'render-error')) return;
-        worker.removeEventListener('message', onMessage);
-        if (latestSeqRef.current !== seq) return; // superseded
-        if (msg.type === 'rendered') {
-          setState((s) => ({
-            bytes: msg.bytes,
-            tags: msg.tags,
-            rendering: false,
-            error: null,
-            durationMs: msg.durationMs,
-            version: s.version + 1,
-          }));
-        } else {
-          // Keep last good bytes visible; surface the error alongside.
-          setState((s) => ({ ...s, rendering: false, error: msg.message }));
-        }
-      };
-      worker.addEventListener('message', onMessage);
-      const req: RenderRequest = {
-        type: 'render',
-        seq,
-        docId,
-        moduleUrl,
-        inspect: true,
-      };
-      worker.postMessage(req);
-    });
+    void getWorker().then(
+      (worker) => {
+        if (latestSeqRef.current !== seq) return; // superseded while booting
+        const onMessage = (event: MessageEvent<RenderResponse>) => {
+          const msg = event.data;
+          if (msg.seq !== seq || (msg.type !== 'rendered' && msg.type !== 'render-error')) return;
+          worker.removeEventListener('message', onMessage);
+          if (latestSeqRef.current !== seq) return; // superseded
+          if (msg.type === 'rendered') {
+            setState((s) => ({
+              bytes: msg.bytes,
+              tags: msg.tags,
+              rendering: false,
+              error: null,
+              durationMs: msg.durationMs,
+              version: s.version + 1,
+            }));
+          } else {
+            // Keep last good bytes visible; surface the error alongside.
+            setState((s) => ({ ...s, rendering: false, error: msg.message }));
+          }
+        };
+        worker.addEventListener('message', onMessage);
+        const req: RenderRequest = {
+          type: 'render',
+          seq,
+          docId,
+          moduleUrl,
+          inspect: true,
+        };
+        worker.postMessage(req);
+      },
+      (e: unknown) => {
+        if (latestSeqRef.current !== seq) return;
+        setState((s) => ({ ...s, rendering: false, error: errorMessage(e) }));
+      },
+    );
   }, [docId]);
 
   useEffect(() => {
@@ -207,36 +228,42 @@ function usePreviewPdf(
       return;
     }
 
-    void getWorker().then((worker) => {
-      if (latestSeqRef.current !== seq) return;
-      const onMessage = (event: MessageEvent<RenderResponse>) => {
-        const msg = event.data;
-        if (msg.seq !== seq || (msg.type !== 'rendered' && msg.type !== 'render-error')) return;
-        worker.removeEventListener('message', onMessage);
+    void getWorker().then(
+      (worker) => {
         if (latestSeqRef.current !== seq) return;
-        if (msg.type === 'rendered') {
-          setState((s) => ({
-            bytes: msg.bytes,
-            tags: msg.tags,
-            rendering: false,
-            error: null,
-            durationMs: msg.durationMs,
-            version: s.version + 1,
-          }));
-        } else {
-          setState((s) => ({ ...s, rendering: false, error: msg.message }));
-        }
-      };
-      worker.addEventListener('message', onMessage);
-      const req: RenderRequest = {
-        type: 'render',
-        seq,
-        ...sourceRef.current.source(),
-        moduleUrl,
-        inspect: false,
-      };
-      worker.postMessage(req);
-    });
+        const onMessage = (event: MessageEvent<RenderResponse>) => {
+          const msg = event.data;
+          if (msg.seq !== seq || (msg.type !== 'rendered' && msg.type !== 'render-error')) return;
+          worker.removeEventListener('message', onMessage);
+          if (latestSeqRef.current !== seq) return;
+          if (msg.type === 'rendered') {
+            setState((s) => ({
+              bytes: msg.bytes,
+              tags: msg.tags,
+              rendering: false,
+              error: null,
+              durationMs: msg.durationMs,
+              version: s.version + 1,
+            }));
+          } else {
+            setState((s) => ({ ...s, rendering: false, error: msg.message }));
+          }
+        };
+        worker.addEventListener('message', onMessage);
+        const req: RenderRequest = {
+          type: 'render',
+          seq,
+          ...sourceRef.current.source(),
+          moduleUrl,
+          inspect: false,
+        };
+        worker.postMessage(req);
+      },
+      (e: unknown) => {
+        if (latestSeqRef.current !== seq) return;
+        setState((s) => ({ ...s, rendering: false, error: errorMessage(e) }));
+      },
+    );
   }, [key, enabled]);
 
   return state;
