@@ -38,6 +38,21 @@ function readCoreVersion(): string {
 
 const CORE_VERSION = readCoreVersion();
 
+// The browser fetches these by URL (WASM init, the pdf.js worker, UI fonts).
+// Vite serves them from their realpaths, which fall outside the workspace root
+// when node_modules is symlinked in from another tree (e.g. a pnpm deploy).
+const URL_FETCHED_PACKAGES = [
+  'takumi-pdf',
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  '@fontsource-variable/geist',
+];
+
+export function urlFetchedPackageRoots(): string[] {
+  return URL_FETCHED_PACKAGES.map((specifier) =>
+    findPackageRoot(fileURLToPath(import.meta.resolve(specifier))),
+  );
+}
+
 export type CreateViteConfigOptions = {
   userCwd: string;
   config?: OpenPdfConfig;
@@ -132,11 +147,10 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
       port: config.port ?? 5173,
       ...(config.allowedHosts !== undefined ? { allowedHosts: config.allowedHosts } : {}),
       fs: {
-        // The workspace root covers node_modules however the package manager
-        // lays it out (incl. pnpm's virtual store realpaths for fonts + WASM).
         allow: [
           APP_ROOT,
           PKG_ROOT,
+          ...urlFetchedPackageRoots(),
           searchForWorkspaceRoot(userCwd),
           userCwd,
           docsAbs,
