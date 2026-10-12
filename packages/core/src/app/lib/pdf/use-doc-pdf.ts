@@ -213,9 +213,9 @@ function usePreviewPdf(
       durationMs: null,
       version: 0,
     });
-    if (!enabled || !key) return;
     const seq = ++seqCounter;
     latestSeqRef.current = seq;
+    if (!enabled || !key) return;
     let moduleUrl: string;
     try {
       moduleUrl = sourceRef.current.importUrl();
