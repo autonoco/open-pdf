@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { build } from 'vite';
+import { build, createServer } from 'vite';
 import { afterEach, expect, it } from 'vitest';
 import { publishedPreviewsPlugin } from './published-previews-plugin.ts';
 
@@ -70,4 +70,28 @@ it('rejects a symbolic link masquerading as an image', async () => {
   const { root, directory } = await fixture([{ id: 'example', thumbnail: filename }]);
   await fs.symlink(path.join(root, 'entry.js'), path.join(directory, filename));
   await expect(bundle(root, directory)).rejects.toThrow('Invalid preview image');
+});
+
+it('keeps editing previews live even when a published index exists', async () => {
+  const { root, directory } = await fixture([{ id: 'example', thumbnail: 'invalid.png' }]);
+  const server = await createServer({
+    root,
+    configFile: false,
+    logLevel: 'silent',
+    plugins: [publishedPreviewsPlugin(directory)],
+    server: { middlewareMode: true },
+  });
+  try {
+    const result = await server.transformRequest('virtual:open-pdf/previews');
+    expect(result?.code).toContain('export default {}');
+  } finally {
+    await server.close();
+  }
+});
+it('identifies the document when a published image is missing', async () => {
+  const thumbnail = `${'a'.repeat(64)}.png`;
+  const { root, directory } = await fixture([{ id: 'example', thumbnail }]);
+  await expect(bundle(root, directory)).rejects.toThrow(
+    `Cannot read preview for example: ${thumbnail}`,
+  );
 });
