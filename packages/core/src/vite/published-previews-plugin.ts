@@ -35,9 +35,12 @@ export function publishedPreviewsPlugin(directory: string): Plugin {
         throw new Error('Invalid published preview index');
       const imports: string[] = [];
       const entries: string[] = [];
+      const seen = new Set<string>();
       for (const [i, doc] of index.documents.entries()) {
         if (!doc || typeof doc.id !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$/.test(doc.id))
           throw new Error('Invalid preview document id');
+        if (seen.has(doc.id)) throw new Error(`Duplicate preview document id: ${doc.id}`);
+        seen.add(doc.id);
         if (doc.thumbnail === null) {
           entries.push(`${JSON.stringify(doc.id)}: null`);
           continue;
