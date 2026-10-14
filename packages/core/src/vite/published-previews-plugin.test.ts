@@ -95,3 +95,11 @@ it('identifies the document when a published image is missing', async () => {
     `Cannot read preview for example: ${thumbnail}`,
   );
 });
+
+it('rejects duplicate document ids instead of silently replacing a preview', async () => {
+  const { root, directory } = await fixture([
+    { id: 'example', thumbnail: null },
+    { id: 'example', thumbnail: null },
+  ]);
+  await expect(bundle(root, directory)).rejects.toThrow('Duplicate preview document id: example');
+});
