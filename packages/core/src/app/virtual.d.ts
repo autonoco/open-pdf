@@ -62,3 +62,8 @@ declare module 'virtual:open-pdf/templates' {
   export const templates: TemplateMeta[];
   export function templateImportUrl(id: string): string;
 }
+
+declare module 'virtual:open-pdf/previews' {
+  const previews: Record<string, string | null>;
+  export default previews;
+}
