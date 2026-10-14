@@ -10,6 +10,7 @@ import { designPlugin } from './design-plugin.ts';
 import { locTagsPlugin } from './loc-tags-plugin.ts';
 import { notesPlugin } from './notes-plugin.ts';
 import { loadUserConfig, type OpenPdfConfig, openPdfPlugin } from './open-pdf-plugin.ts';
+import { publishedPreviewsPlugin } from './published-previews-plugin.ts';
 import { templatesPlugin } from './templates-plugin.ts';
 import { themesPlugin } from './themes-plugin.ts';
 
@@ -75,6 +76,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
     configFile: false,
     envDir: userCwd,
     plugins: [
+      publishedPreviewsPlugin(path.join(docsAbs, '.documents')),
       locTagsPlugin({ userCwd, docsDir }),
       react(),
       tailwindcss(),
