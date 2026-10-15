@@ -65,6 +65,8 @@ async function runSkillsDriftCheck(skillsDir: string): Promise<void> {
 }
 
 interface BuildFlags {
+  base?: string;
+  assetsDir?: string;
   outDir?: string;
 }
 
@@ -108,6 +110,8 @@ export async function run(argv: string[]): Promise<void> {
   program
     .command('build')
     .description('Build a static site')
+    .option('--base <path>', 'public base path')
+    .option('--assets-dir <dir>', 'directory for generated assets inside the output')
     .option('--out-dir <dir>', 'output directory (defaults to `dist`)')
     .action(async (flags: BuildFlags) => {
       await assertViteResolvesToCore();
