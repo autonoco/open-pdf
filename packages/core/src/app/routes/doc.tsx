@@ -25,6 +25,7 @@ import { readLastHomeLocation } from '@/lib/last-home-location';
 import { cn } from '@/lib/utils';
 import { type EditableFormat, FORMAT_MIME } from '../../export/editable';
 import { RichContentField } from '../components/inspector/rich-content-field';
+import { switchHostedEditor } from '../lib/hosted-editor';
 import { buildHitMap, extractBoxText, type LocBox, type PageHitMap } from '../lib/pdf/hit-map';
 import { InspectOverlay } from '../lib/pdf/inspect-overlay';
 import { PdfPageCanvas, usePdfDocument } from '../lib/pdf/pdf-viewer';
@@ -82,7 +83,12 @@ export function Doc() {
   const pageNumbers = useMemo(() => Array.from({ length: numPages }, (_, i) => i + 1), [numPages]);
 
   // ── Inspector ────────────────────────────────────────────────────────────
-  const [inspecting, setInspecting] = useState(false);
+  const [inspecting, setInspecting] = useState(
+    () => new URLSearchParams(window.location.search).get('edit') === '1',
+  );
+  const toggleInspecting = useCallback(() => {
+    if (!switchHostedEditor(!inspecting)) setInspecting(!inspecting);
+  }, [inspecting]);
   const [hitMap, setHitMap] = useState<PageHitMap[] | null>(null);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [note, setNote] = useState('');
@@ -120,12 +126,12 @@ export function Doc() {
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
-      if (e.key === 'i') setInspecting((v) => !v);
+      if (e.key === 'i') toggleInspecting();
       if (e.key === 'Escape') setSelection(null);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [toggleInspecting]);
 
   // Agent cursor: which doc is open, and what is selected.
   useEffect(() => {
@@ -257,7 +263,7 @@ export function Doc() {
             <Button
               variant={inspecting ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setInspecting((v) => !v)}
+              onClick={toggleInspecting}
               disabled={!hitMap}
               aria-pressed={inspecting}
               title="Inspect elements (i) — click any element to select it or leave a comment"
