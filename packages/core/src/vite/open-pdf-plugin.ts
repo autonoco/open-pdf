@@ -8,6 +8,7 @@ import type { OpenPdfConfig } from '../config.ts';
 import { DOC_ID_RE } from '../editing/doc-ops.ts';
 import { foldersManifestPath } from '../files/folders.ts';
 import { hasRecentWrite } from './recent-writes.ts';
+import { workerEditorEnabled } from './worker-editor-config';
 
 export type { OpenPdfConfig };
 
@@ -134,6 +135,7 @@ export async function generateDocsModule(
   files: string[],
   docsRoot: string,
   isDev: boolean,
+  workerEditor = false,
 ): Promise<{ code: string; ignored: string[] }> {
   const scanned = await Promise.all(
     files.map(async (abs) => {
@@ -141,7 +143,7 @@ export async function generateDocsModule(
       const importPath = isDev ? `@fs/${normalizePath(abs).replace(/^\/+/, '')}` : abs;
       const meta = await readDocMeta(abs);
       const hash =
-        !isDev && process.env.VITE_BUTTONS_WORKER_EDITOR === 'true'
+        !isDev && workerEditor
           ? createHash('sha256')
               .update(await fs.readFile(abs))
               .digest('hex')
@@ -240,6 +242,7 @@ export function openPdfPlugin(opts: OpenPdfPluginOptions): Plugin {
   let servedDocsCode: string | null = null;
 
   let isDev = false;
+  let workerEditor = false;
   const docIdForEntry = (p: string): string | null => {
     const rel = path.relative(docsRoot, p);
     if (rel.startsWith('..') || path.isAbsolute(rel)) return null;
@@ -271,15 +274,18 @@ export function openPdfPlugin(opts: OpenPdfPluginOptions): Plugin {
     name: 'open-pdf',
     config(_c, env) {
       isDev = env.command === 'serve';
-      if (process.env.VITE_BUTTONS_WORKER_EDITOR === 'true')
-        return {
-          define: {
-            'process.env.BABEL_8_BREAKING': 'false',
-            'process.env.BABEL_TYPES_8_BREAKING': 'false',
-          },
-        };
+      workerEditor = workerEditorEnabled(_c, env, userCwd);
       return {
         server: { fs: { allow: [userCwd] } },
+        define: {
+          'import.meta.env.VITE_BUTTONS_WORKER_EDITOR': JSON.stringify(String(workerEditor)),
+          ...(workerEditor
+            ? {
+                'process.env.BABEL_8_BREAKING': 'false',
+                'process.env.BABEL_TYPES_8_BREAKING': 'false',
+              }
+            : {}),
+        },
       };
     },
     resolveId(id) {
@@ -291,7 +297,7 @@ export function openPdfPlugin(opts: OpenPdfPluginOptions): Plugin {
     async load(id) {
       if (id === resolved(DOCS_VMOD)) {
         const files = await findDocs(userCwd, docsDir);
-        const { code, ignored } = await generateDocsModule(files, docsRoot, isDev);
+        const { code, ignored } = await generateDocsModule(files, docsRoot, isDev, workerEditor);
         servedDocsCode = code;
         for (const docId of ignored) {
           if (warnedInvalidDocIds.has(docId)) continue;
@@ -339,7 +345,7 @@ export function openPdfPlugin(opts: OpenPdfPluginOptions): Plugin {
       const currentDocsCode = async () => {
         try {
           const files = await findDocs(userCwd, docsDir);
-          return (await generateDocsModule(files, docsRoot, isDev)).code;
+          return (await generateDocsModule(files, docsRoot, isDev, workerEditor)).code;
         } catch {
           return null;
         }
