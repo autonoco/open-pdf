@@ -214,3 +214,30 @@ it('reads rich text at rebased locations after an earlier save', async () => {
   expect(value?.text).toBe('Other');
   s.complete(0);
 });
+it('serializes independent saves for one document', async () => {
+  const s = server();
+  await Promise.all([
+    saveWorkerEdits('deck', [edit('First')]),
+    saveWorkerEdits('deck', [
+      {
+        line: 1,
+        column: source.indexOf('<p'),
+        ops: [{ kind: 'set-text', prevText: 'Other', value: 'Second' }],
+      },
+    ]),
+  ]);
+  expect(s.content()).toContain('<h1>First</h1><p>Second</p>');
+  s.complete(0);
+  s.complete(1);
+});
+it('does not poison the save queue after a rejected edit', async () => {
+  const s = server();
+  const failed = saveWorkerEdits('deck', [
+    { line: 999, column: 0, ops: [{ kind: 'set-text', value: 'Missing' }] },
+  ]);
+  const next = saveWorkerEdits('deck', [edit('Recovered')]);
+  await expect(failed).rejects.toThrow('No edits saved');
+  await expect(next).resolves.toEqual([{ ok: true }]);
+  expect(s.content()).toContain('Recovered');
+  s.complete(0);
+});
