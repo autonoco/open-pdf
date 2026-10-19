@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { hasWorkerEditor } from '../hosted-editor';
 
 export type RichTextRun = { text: string; style?: Record<string, string> };
 
@@ -33,6 +34,11 @@ export class NoOpEditError extends Error {
 export function useEditor(docId: string) {
   const applyEdit = useCallback(
     async (line: number, column: number, ops: EditOp[]) => {
+      if (hasWorkerEditor) {
+        const { saveWorkerEdits } = await import('./worker-editor');
+        await saveWorkerEdits(docId, [{ line, column, ops }]);
+        return;
+      }
       const res = await fetch('/__edit', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -55,6 +61,10 @@ export function useEditor(docId: string) {
   const applyEdits = useCallback(
     async (edits: Edit[]): Promise<EditResult[]> => {
       if (edits.length === 0) return [];
+      if (hasWorkerEditor) {
+        const { saveWorkerEdits } = await import('./worker-editor');
+        return saveWorkerEdits(docId, edits);
+      }
       const res = await fetch('/__edit/batch', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },

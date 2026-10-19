@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { hasWorkerEditor } from '../hosted-editor';
 
 export type DocComment = {
   id: string;
@@ -15,7 +16,7 @@ export function useComments(docId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const refetch = useCallback(async () => {
-    if (!docId) return;
+    if (!docId || hasWorkerEditor) return;
     try {
       const res = await fetch(`/__comments?docId=${encodeURIComponent(docId)}`);
       if (!res.ok) {
