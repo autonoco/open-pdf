@@ -7,6 +7,7 @@ import { Check, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ColorSelector, RichTextEditor } from '@/components/editor';
+import { hasWorkerEditor } from '../../lib/hosted-editor';
 import '@/components/editor/style.css';
 import {
   docToRuns,
@@ -90,6 +91,10 @@ async function fetchText(
   rendered: string,
   signal: AbortSignal,
 ): Promise<TextRead | null> {
+  if (hasWorkerEditor) {
+    const { readWorkerText } = await import('../../lib/inspector/worker-editor');
+    return readWorkerText(docId, line, column, rendered, signal);
+  }
   const params = new URLSearchParams({ docId, line: String(line), column: String(column) });
   if (rendered) params.set('text', rendered);
   const res = await fetch(`/__edit/text?${params}`, { signal });
@@ -120,6 +125,8 @@ export function RichContentField({
   const lastRef = useRef<RichTextRun[]>([]);
   const timerRef = useRef<number | null>(null);
   const composingRef = useRef(false);
+  const savingRef = useRef(false);
+  const pendingRunsRef = useRef<RichTextRun[] | null>(null);
   const queueSaveRef = useRef<(runs: RichTextRun[]) => void>(() => {});
 
   const editor = useEditor({
@@ -135,26 +142,44 @@ export function RichContentField({
 
   const save = useCallback(
     async (runs: RichTextRun[]) => {
-      const current = readRef.current;
-      if (!current) return;
-      const rich = current.rich && (runsHaveStyle(runs) || runsHaveStyle(current.runs));
-      const op: EditOp = rich
-        ? { kind: 'set-rich-text', runs, prevText: current.text }
-        : { kind: 'set-text', value: runsText(runs), prevText: current.text };
-      setStatus('saving');
+      pendingRunsRef.current = runs;
+      if (savingRef.current) return;
+      savingRef.current = true;
       try {
-        const res = await fetch('/__edit', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ docId, line, column, ops: [op] }),
-        });
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        if (!res.ok) throw new Error(body.error ?? `POST /__edit → ${res.status}`);
-        readRef.current = { text: runsText(runs), runs, rich: current.rich };
-        setStatus('saved');
-      } catch (e) {
-        setStatus('dirty');
-        toast.error(e instanceof Error ? e.message : String(e));
+        while (pendingRunsRef.current) {
+          const runs = pendingRunsRef.current;
+          pendingRunsRef.current = null;
+          const current = readRef.current;
+          if (!current) return;
+          const rich = current.rich && (runsHaveStyle(runs) || runsHaveStyle(current.runs));
+          const op: EditOp = rich
+            ? { kind: 'set-rich-text', runs, prevText: current.text }
+            : { kind: 'set-text', value: runsText(runs), prevText: current.text };
+          setStatus('saving');
+          try {
+            if (hasWorkerEditor) {
+              const { saveWorkerEdits } = await import('../../lib/inspector/worker-editor');
+              await saveWorkerEdits(docId, [{ line, column, ops: [op] }]);
+            } else {
+              const res = await fetch('/__edit', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ docId, line, column, ops: [op] }),
+              });
+              const body = (await res.json().catch(() => ({}))) as { error?: string };
+              if (!res.ok) throw new Error(body.error ?? `POST /__edit → ${res.status}`);
+            }
+            readRef.current = { text: runsText(runs), runs, rich: current.rich };
+            setStatus('saved');
+          } catch (e) {
+            setStatus('dirty');
+            toast.error(e instanceof Error ? e.message : String(e));
+            pendingRunsRef.current = null;
+            break;
+          }
+        }
+      } finally {
+        savingRef.current = false;
       }
     },
     [docId, line, column],

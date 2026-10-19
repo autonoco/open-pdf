@@ -80,7 +80,10 @@ export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
   const docsRoot = path.resolve(opts.userCwd, opts.docsDir ?? 'docs').replace(/\\/g, '/');
   return {
     name: 'open-pdf:loc-tags',
-    apply: opts.apply ?? 'serve',
+    apply:
+      opts.apply ??
+      ((_config, { command }) =>
+        command === 'serve' || process.env.VITE_BUTTONS_WORKER_EDITOR === 'true'),
     // Must run before @vitejs/plugin-react so the JSX transform
     // sees our injected attributes.
     enforce: 'pre',
