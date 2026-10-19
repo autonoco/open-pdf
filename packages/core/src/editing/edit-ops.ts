@@ -226,7 +226,7 @@ function elementHasTextCandidate(ast: t.File, element: t.JSXElement, prevText: s
   return collectElementTextCandidates(ast, element).some((candidate) => candidate.current === norm);
 }
 
-function findElementForEdit(
+export function findElementForEdit(
   ast: t.File,
   line: number,
   column: number,
@@ -1485,17 +1485,20 @@ function planReplacePlaceholder(
   return { importSplice, elementSplice: spliceRange(element, replacement) };
 }
 
-export function applyEdit(
+export function planEdit(
   source: string,
   line: number,
   column: number,
   ops: EditOp[],
-): ApplyEditResult {
-  if (ops.length === 0) return { ok: true, source };
+  exact = false,
+): { ok: true; splices: Splice[] } | { ok: false; status: number; error: string } {
+  if (ops.length === 0) return { ok: true, splices: [] };
 
   const ast = parseSource(source);
   if (!ast) return { ok: false, status: 422, error: 'could not parse source' };
-  const element = findElementForEdit(ast, line, column, ops);
+  const element = exact
+    ? findInnermostJsxElement(ast, line, column)
+    : findElementForEdit(ast, line, column, ops);
   if (!element) return { ok: false, status: 422, error: 'no JSX element at location' };
 
   const splices: Splice[] = [];
@@ -1583,8 +1586,10 @@ export function applyEdit(
     }
   }
 
-  if (splices.length === 0) return { ok: true, source };
+  return { ok: true, splices };
+}
 
+export function applySplices(source: string, splices: Splice[]): ApplyEditResult {
   splices.sort((a, b) => b.from - a.from);
   let next = source;
   for (const sp of splices) {
@@ -1594,4 +1599,14 @@ export function applyEdit(
     return { ok: false, status: 422, error: 'edit would produce invalid source' };
   }
   return { ok: true, source: next };
+}
+
+export function applyEdit(
+  source: string,
+  line: number,
+  column: number,
+  ops: EditOp[],
+): ApplyEditResult {
+  const plan = planEdit(source, line, column, ops);
+  return plan.ok ? applySplices(source, plan.splices) : plan;
 }

@@ -1,5 +1,6 @@
 declare module 'virtual:open-pdf/docs' {
   import type { DocModule } from './lib/sdk';
+  export const docSources: Record<string, { hash: string; file: string }>;
   export const docIds: string[];
   export const docThemes: Record<string, string>;
   export const docCreatedAt: Record<string, number>;

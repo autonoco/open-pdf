@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { type DocComment, useComments } from '@/lib/inspector/use-comments';
 import { type Edit, type EditOp, type EditResult, useEditor } from '@/lib/inspector/use-editor';
 import { useLocale } from '@/lib/use-locale';
+import { hasWorkerEditor } from '../../lib/hosted-editor';
 import { AssetPickerDialog } from './asset-picker-dialog';
 import { ImageCropDialog, type ImageCropRect } from './image-crop-dialog';
 
@@ -284,7 +285,9 @@ export function InspectorProvider({
   pageIndex: number;
   children: ReactNode;
 }) {
-  const [active, setActive] = useState(false);
+  const [active, setActive] = useState(
+    () => hasWorkerEditor && new URLSearchParams(window.location.search).get('edit') === '1',
+  );
   const [selected, setSelected] = useState<SelectedTarget | null>(null);
   const { comments, error, refetch, add, remove } = useComments(docId);
   const { applyEdit, applyEdits } = useEditor(docId);
@@ -673,7 +676,7 @@ export function InspectorProvider({
             ops: [{ kind: 'set-style', key: k, value: op.value, prevText: op.prevText }],
           },
           onSuccess: (b) => {
-            b.styleOps.delete(k);
+            if (b.styleOps.get(k)?.seq === op.seq) b.styleOps.delete(k);
           },
         });
       }
@@ -694,7 +697,7 @@ export function InspectorProvider({
             ],
           },
           onSuccess: (b) => {
-            b.attrOps.delete(attr);
+            if (b.attrOps.get(attr)?.seq === op.seq) b.attrOps.delete(attr);
           },
         });
       }
@@ -717,7 +720,7 @@ export function InspectorProvider({
             ],
           },
           onSuccess: (b) => {
-            b.rangeStyleOps.delete(id);
+            if (b.rangeStyleOps.get(id)?.seq === op.seq) b.rangeStyleOps.delete(id);
           },
         });
       }
@@ -734,7 +737,7 @@ export function InspectorProvider({
             ops: [{ kind: 'set-text', value: textOp.value, prevText: orig?.value }],
           },
           onSuccess: (b) => {
-            b.textOps.delete(instanceId);
+            if (b.textOps.get(instanceId)?.seq === textOp.seq) b.textOps.delete(instanceId);
           },
         });
       }
@@ -938,7 +941,7 @@ export function InspectorProvider({
   }, []);
 
   useEffect(() => {
-    if (import.meta.env.PROD) return;
+    if (import.meta.env.PROD && !hasWorkerEditor) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
       if (e.key !== 'i' && e.key !== 'I') return;
@@ -1151,7 +1154,7 @@ function parsePercent(s: string, fallback: number): number {
 export function InspectToggleButton() {
   const t = useLocale();
   const { active, toggle } = useInspector();
-  if (import.meta.env.PROD) return null;
+  if (import.meta.env.PROD && !hasWorkerEditor) return null;
   return (
     <Button
       size="sm"

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -139,7 +140,20 @@ export async function generateDocsModule(
       const id = toId(abs, docsRoot);
       const importPath = isDev ? `@fs/${normalizePath(abs).replace(/^\/+/, '')}` : abs;
       const meta = await readDocMeta(abs);
-      return { id, importPath, theme: meta.theme, createdAt: parseCreatedAtMs(meta.createdAt) };
+      const hash =
+        !isDev && process.env.VITE_BUTTONS_WORKER_EDITOR === 'true'
+          ? createHash('sha256')
+              .update(await fs.readFile(abs))
+              .digest('hex')
+          : '';
+      return {
+        id,
+        importPath,
+        hash,
+        file: path.basename(abs),
+        theme: meta.theme,
+        createdAt: parseCreatedAtMs(meta.createdAt),
+      };
     }),
   );
 
@@ -194,6 +208,7 @@ if (import.meta.hot) {
 
   const code = `// virtual:open-pdf/docs — generated
 export const docIds = ${ids};
+export const docSources = ${JSON.stringify(Object.fromEntries(entries.map((e) => [e.id, { hash: e.hash, file: e.file }])))};
 export const docThemes = ${themesJson};
 export const docCreatedAt = ${createdAtJson};
 ${devRuntime}
@@ -256,6 +271,13 @@ export function openPdfPlugin(opts: OpenPdfPluginOptions): Plugin {
     name: 'open-pdf',
     config(_c, env) {
       isDev = env.command === 'serve';
+      if (process.env.VITE_BUTTONS_WORKER_EDITOR === 'true')
+        return {
+          define: {
+            'process.env.BABEL_8_BREAKING': 'false',
+            'process.env.BABEL_TYPES_8_BREAKING': 'false',
+          },
+        };
       return {
         server: { fs: { allow: [userCwd] } },
       };
