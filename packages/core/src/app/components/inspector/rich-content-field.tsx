@@ -170,7 +170,7 @@ export function RichContentField({
               if (!res.ok) throw new Error(body.error ?? `POST /__edit → ${res.status}`);
             }
             readRef.current = { text: runsText(runs), runs, rich: current.rich };
-            setStatus('saved');
+            if (sameRuns(runs, lastRef.current)) setStatus('saved');
           } catch (e) {
             setStatus('dirty');
             toast.error(e instanceof Error ? e.message : String(e));

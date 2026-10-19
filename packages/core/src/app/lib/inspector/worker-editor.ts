@@ -49,7 +49,7 @@ async function publicationComplete(revision: string, signal: AbortSignal) {
 type SavedSession = { original: string; content: string; edits: Edit[] };
 const sessions = new Map<string, SavedSession>();
 const publications = new Map<string, { revision: string; controller: AbortController }>();
-const saving = new Set<string>();
+const saving = new Map<string, Promise<EditResult[]>>();
 
 function trackPublication(docId: string, revision: string, error?: string) {
   publications.get(docId)?.controller.abort();
@@ -82,12 +82,16 @@ function trackPublication(docId: string, revision: string, error?: string) {
 }
 
 export async function saveWorkerEdits(docId: string, edits: Edit[]): Promise<EditResult[]> {
-  if (saving.has(docId)) throw new Error('A save is already in progress.');
-  saving.add(docId);
+  const previous = saving.get(docId);
+  const next = (async () => {
+    if (previous) await previous.catch(() => undefined);
+    return save(docId, edits);
+  })();
+  saving.set(docId, next);
   try {
-    return await save(docId, edits);
+    return await next;
   } finally {
-    saving.delete(docId);
+    if (saving.get(docId) === next) saving.delete(docId);
   }
 }
 

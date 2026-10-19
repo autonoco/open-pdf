@@ -3,6 +3,7 @@ import { parse as babelParse } from '@babel/parser';
 import * as t from '@babel/types';
 import type { Plugin } from 'vite';
 import { walkJsx } from '../editing/babel-walk.ts';
+import { workerEditorEnabled } from './worker-editor-config';
 
 // Inject `data-pdf-loc="<line>:<col>"` onto every host JSX element in
 // doc source files so the inspector can map a click straight to a
@@ -82,8 +83,7 @@ export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
     name: 'open-pdf:loc-tags',
     apply:
       opts.apply ??
-      ((_config, { command }) =>
-        command === 'serve' || process.env.VITE_BUTTONS_WORKER_EDITOR === 'true'),
+      ((config, env) => env.command === 'serve' || workerEditorEnabled(config, env, opts.userCwd)),
     // Must run before @vitejs/plugin-react so the JSX transform
     // sees our injected attributes.
     enforce: 'pre',
