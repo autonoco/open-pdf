@@ -11,6 +11,7 @@ import type {
   RenderResponse,
   RenderSource,
 } from './render-worker';
+import { reportDocumentError } from './report-error';
 
 // One shared worker: renders are serialized in WASM anyway, and sharing keeps
 // the module cache (and WASM init cost) across docs.
@@ -93,6 +94,7 @@ export function useDocPdf(docId: string): DocPdfState & { rerender: () => void }
         rendering: false,
         error: e instanceof Error ? e.message : String(e),
       }));
+      void reportDocumentError(docId, 'render', e);
       return;
     }
     setState((s) => ({ ...s, rendering: true, error: null }));
@@ -100,7 +102,7 @@ export function useDocPdf(docId: string): DocPdfState & { rerender: () => void }
     void getWorker().then(
       (worker) => {
         if (latestSeqRef.current !== seq) return; // superseded while booting
-        const onMessage = (event: MessageEvent<RenderResponse>) => {
+        const onMessage = async (event: MessageEvent<RenderResponse>) => {
           const msg = event.data;
           if (msg.seq !== seq || (msg.type !== 'rendered' && msg.type !== 'render-error')) return;
           worker.removeEventListener('message', onMessage);
@@ -117,6 +119,7 @@ export function useDocPdf(docId: string): DocPdfState & { rerender: () => void }
           } else {
             // Keep last good bytes visible; surface the error alongside.
             setState((s) => ({ ...s, rendering: false, error: msg.message }));
+            await reportDocumentError(docId, 'render', msg.message);
           }
         };
         worker.addEventListener('message', onMessage);
@@ -129,9 +132,10 @@ export function useDocPdf(docId: string): DocPdfState & { rerender: () => void }
         };
         worker.postMessage(req);
       },
-      (e: unknown) => {
+      async (e: unknown) => {
         if (latestSeqRef.current !== seq) return;
         setState((s) => ({ ...s, rendering: false, error: errorMessage(e) }));
+        await reportDocumentError(docId, 'render', e);
       },
     );
   }, [docId]);
@@ -272,53 +276,63 @@ function usePreviewPdf(
 /** One-shot clean render (no inspector annotations) for download/export. */
 export function renderCleanPdf(docId: string): Promise<Uint8Array> {
   const seq = ++seqCounter;
-  return getWorker().then(
-    (worker) =>
-      new Promise<Uint8Array>((resolve, reject) => {
-        const onMessage = (event: MessageEvent<RenderResponse>) => {
-          const msg = event.data;
-          if (msg.seq !== seq || (msg.type !== 'rendered' && msg.type !== 'render-error')) return;
-          worker.removeEventListener('message', onMessage);
-          if (msg.type === 'rendered') resolve(msg.bytes);
-          else reject(new Error(msg.message));
-        };
-        worker.addEventListener('message', onMessage);
-        const req: RenderRequest = {
-          type: 'render',
-          seq,
-          docId,
-          moduleUrl: docImportUrl(docId),
-          inspect: false,
-        };
-        worker.postMessage(req);
-      }),
-  );
+  return getWorker()
+    .then(
+      (worker) =>
+        new Promise<Uint8Array>((resolve, reject) => {
+          const onMessage = (event: MessageEvent<RenderResponse>) => {
+            const msg = event.data;
+            if (msg.seq !== seq || (msg.type !== 'rendered' && msg.type !== 'render-error')) return;
+            worker.removeEventListener('message', onMessage);
+            if (msg.type === 'rendered') resolve(msg.bytes);
+            else reject(new Error(msg.message));
+          };
+          worker.addEventListener('message', onMessage);
+          const req: RenderRequest = {
+            type: 'render',
+            seq,
+            docId,
+            moduleUrl: docImportUrl(docId),
+            inspect: false,
+          };
+          worker.postMessage(req);
+        }),
+    )
+    .catch(async (error: unknown) => {
+      await reportDocumentError(docId, 'export', error);
+      throw error;
+    });
 }
 
 /** One-shot export of a doc as Word or Markdown, built from the same node tree as the PDF. */
 export function exportDoc(docId: string, format: EditableFormat): Promise<Uint8Array> {
   const seq = ++seqCounter;
-  return getWorker().then(
-    (worker) =>
-      new Promise<Uint8Array>((resolve, reject) => {
-        const onMessage = (event: MessageEvent<ExportResponse>) => {
-          const msg = event.data;
-          if (msg.seq !== seq || (msg.type !== 'exported' && msg.type !== 'export-error')) return;
-          worker.removeEventListener('message', onMessage);
-          if (msg.type === 'exported') {
-            for (const warning of msg.warnings) console.warn(`[open-pdf] ${docId}: ${warning}`);
-            resolve(msg.bytes);
-          } else reject(new Error(msg.message));
-        };
-        worker.addEventListener('message', onMessage);
-        const req: ExportRequest = {
-          type: 'export',
-          seq,
-          docId,
-          moduleUrl: docImportUrl(docId),
-          format,
-        };
-        worker.postMessage(req);
-      }),
-  );
+  return getWorker()
+    .then(
+      (worker) =>
+        new Promise<Uint8Array>((resolve, reject) => {
+          const onMessage = (event: MessageEvent<ExportResponse>) => {
+            const msg = event.data;
+            if (msg.seq !== seq || (msg.type !== 'exported' && msg.type !== 'export-error')) return;
+            worker.removeEventListener('message', onMessage);
+            if (msg.type === 'exported') {
+              for (const warning of msg.warnings) console.warn(`[open-pdf] ${docId}: ${warning}`);
+              resolve(msg.bytes);
+            } else reject(new Error(msg.message));
+          };
+          worker.addEventListener('message', onMessage);
+          const req: ExportRequest = {
+            type: 'export',
+            seq,
+            docId,
+            moduleUrl: docImportUrl(docId),
+            format,
+          };
+          worker.postMessage(req);
+        }),
+    )
+    .catch(async (error: unknown) => {
+      await reportDocumentError(docId, 'export', error);
+      throw error;
+    });
 }

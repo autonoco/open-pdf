@@ -31,6 +31,10 @@ at the block level and let the engine satisfy it.
 
 ## Caveats
 
+- `breakBefore: 'avoid'` and `breakAfter: 'avoid'` are unsupported and fail
+  rendering. To keep a heading and its following paragraph together, wrap them
+  in a small block with `breakInside: 'avoid'`.
+
 - `breakInside: 'avoid'` on **table rows** is unreliable when the table has a
   flex ancestor — see `tables.md`. It is reliable on ordinary block elements.
 - A `breakInside: 'avoid'` block taller than one page has to split anyway.
