@@ -38,10 +38,10 @@ it('supports standalone servers without a hosted error endpoint', async () => {
   warn.mockRestore();
 });
 
-it('redacts full signed URLs before limiting the message', async () => {
+it('redacts signed and protocol-relative URLs in the retained message', async () => {
   const send = vi.fn(async () => new Response(null, { status: 204 }));
   vi.stubGlobal('fetch', send);
-  const signed = `https://user:password@assets.example/private.pdf?X-Amz-Signature=${'secret'.repeat(500)}#private`;
+  const signed = `https://user:password@assets.example/private.pdf?X-Amz-Signature=secret#private`;
   await reportDocumentError(
     'draft',
     'render',
@@ -60,5 +60,21 @@ it.each(['', 'x'.repeat(3000)])(
     await reportDocumentError('draft', 'export', message);
     const [, init] = send.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(String(init.body)).message).toBe(message.slice(0, 2048) || 'Unknown error');
+  },
+);
+
+it.each([true, false])(
+  'bounds input before redacting a truncated URL (Error: %s)',
+  async (asError) => {
+    const send = vi.fn(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', send);
+    const message = `Could not load "https://assets.example/file?token=${'secret'.repeat(10000)}" trailing text`;
+    await reportDocumentError(
+      'draft',
+      'render',
+      asError ? new Error(message) : { toString: () => message },
+    );
+    const [, init] = send.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(String(init.body)).message).toBe('Could not load "[REDACTED_URL]');
   },
 );
