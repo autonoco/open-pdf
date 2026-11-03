@@ -298,8 +298,8 @@ export function renderCleanPdf(docId: string): Promise<Uint8Array> {
           worker.postMessage(req);
         }),
     )
-    .catch(async (error: unknown) => {
-      await reportDocumentError(docId, 'export', error);
+    .catch((error: unknown) => {
+      void reportDocumentError(docId, 'export', error);
       throw error;
     });
 }
@@ -331,8 +331,8 @@ export function exportDoc(docId: string, format: EditableFormat): Promise<Uint8A
           worker.postMessage(req);
         }),
     )
-    .catch(async (error: unknown) => {
-      await reportDocumentError(docId, 'export', error);
+    .catch((error: unknown) => {
+      void reportDocumentError(docId, 'export', error);
       throw error;
     });
 }

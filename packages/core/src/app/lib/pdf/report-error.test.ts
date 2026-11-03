@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { reportDocumentError } from './report-error';
 
 afterEach(() => vi.unstubAllGlobals());
-it('reports bounded errors without document content or tenant identity', async () => {
+it('reports bounded errors without browser-supplied tenant identity', async () => {
   const send = vi.fn(async () => new Response(null, { status: 204 }));
   vi.stubGlobal('fetch', send);
   await reportDocumentError('draft', 'render', new Error('x'.repeat(3000)));
