@@ -37,3 +37,28 @@ it('supports standalone servers without a hosted error endpoint', async () => {
   expect(warn).not.toHaveBeenCalled();
   warn.mockRestore();
 });
+
+it('redacts full signed URLs before limiting the message', async () => {
+  const send = vi.fn(async () => new Response(null, { status: 204 }));
+  vi.stubGlobal('fetch', send);
+  const signed = `https://user:password@assets.example/private.pdf?X-Amz-Signature=${'secret'.repeat(500)}#private`;
+  await reportDocumentError(
+    'draft',
+    'render',
+    new Error(`Could not load "${signed}" or //cdn.example/image.png?token=secret`),
+  );
+  const [, init] = send.mock.calls[0] as unknown as [string, RequestInit];
+  expect(JSON.parse(String(init.body)).message).toBe(
+    'Could not load "[REDACTED_URL]" or [REDACTED_URL]',
+  );
+});
+it.each(['', 'x'.repeat(3000)])(
+  'preserves the fallback and size limit after sanitization',
+  async (message) => {
+    const send = vi.fn(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', send);
+    await reportDocumentError('draft', 'export', message);
+    const [, init] = send.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(String(init.body)).message).toBe(message.slice(0, 2048) || 'Unknown error');
+  },
+);

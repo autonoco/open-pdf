@@ -3,7 +3,10 @@ export async function reportDocumentError(
   operation: 'render' | 'export',
   error: unknown,
 ): Promise<void> {
-  const message = error instanceof Error ? error.message : String(error);
+  const message = (error instanceof Error ? error.message : String(error)).replace(
+    /(?:[a-z][a-z\d+.-]*:)?\/\/[^\s<>"'`]+/gi,
+    '[REDACTED_URL]',
+  );
   try {
     const response = await fetch('/__host/client-errors', {
       method: 'POST',
